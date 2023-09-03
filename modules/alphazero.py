@@ -1,4 +1,5 @@
 import numpy as np
+import os
 import torch
 import torch.nn.functional as F
 import random
@@ -91,10 +92,14 @@ class AlphaZero:
             for epoch in trange(self.args['num_epochs']):
                 self.train(memory)
 
+            directory = f'models/{self.game}'
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+
             torch.save(self.model.state_dict(),
-                       f"models/{self.game}/model_{iteration}.pt")
+                       f"{directory}/model_{iteration}.pt")
             torch.save(self.optimizer.state_dict(),
-                       f"models/{self.game}/optimizer_{iteration}.pt")
+                       f"{directory}/optimizer_{iteration}.pt")
 
 
 class AlphaZeroParallel:
@@ -195,10 +200,14 @@ class AlphaZeroParallel:
             for epoch in trange(self.args['num_epochs']):
                 self.train(memory)
 
+            directory = f'models/{self.game}'
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+
             torch.save(self.model.state_dict(),
-                       f"models/{self.game}/model_{iteration}.pt")
+                       f"{directory}/model_{iteration}.pt")
             torch.save(self.optimizer.state_dict(),
-                       f"models/{self.game}/optimizer_{iteration}.pt")
+                       f"{directory}/optimizer_{iteration}.pt")
 
 
 class SPG:
