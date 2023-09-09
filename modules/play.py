@@ -31,7 +31,6 @@ def _play_game(game, mcts, player=1):
 
         else:
             mcts_probs, action = _get_next_move(game, mcts, state, player)
-            print(mcts_probs, action)
 
         state = game.get_next_state(state, action, player)
 
