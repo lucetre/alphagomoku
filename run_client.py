@@ -8,7 +8,9 @@ def get_next_move(state, player=1):
         "state": state,
         "player": player,
     })
-    url = "http://localhost:8080/next_move"
+
+    url = "https://alphagomoku.onrender.com/next_move"
+    # url = "http://localhost:8080/next_move"
 
     headers = {"Content-Type": "application/json"}
     response = requests.post(
@@ -29,5 +31,5 @@ pprint.pprint(
                [0,  0, -1,  0,  0],
                [0,  0, -1,  0,  1],
                [0,  0,  0,  0,  0]],
-        player=-1,
+        player=1,
     ))
