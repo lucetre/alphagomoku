@@ -12,8 +12,10 @@ jobs:
     steps:
     - name: Check Readiness
       run: |
-        response=$(curl -s -o /dev/null -w "%{http_code}" ${{ env.ALPHAGOMOKU_ENDPOINT_READY }})
-        if [ "$response" -eq 200 ]; then
+        timeout 60s curl -s -o /dev/null -w "%{http_code}" ${{ env.ALPHAGOMOKU_ENDPOINT_READY }}
+        response_code=$?
+        
+        if [ "$response_code" -eq 200 ]; then
           echo "Readiness check passed."
           expected_response=$(curl -s ${{ env.ALPHAGOMOKU_ENDPOINT_READY }})
           expected_json='{"message":"alphagomoku","status":"200"}'
