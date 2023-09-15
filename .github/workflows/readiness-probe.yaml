@@ -1,0 +1,29 @@
+name: Readiness Probe on AlphaGomoku Server
+
+on:
+  schedule:
+    - cron: '*/15 * * * *' # Run every 15 minutes
+
+jobs:
+  readiness_probe:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check Readiness
+      run: |
+        response=$(curl -s -o /dev/null -w "%{http_code}" ${{ env.ALPHAGOMOKU_ENDPOINT_READY }})
+        if [ "$response" -eq 200 ]; then
+          echo "Readiness check passed."
+          expected_response=$(curl -s ${{ env.ALPHAGOMOKU_ENDPOINT_READY }})
+          if [[ "$expected_response" == '{"message": "alphagomoku", "status": "200" }' ]]; then
+            echo "Expected response received."
+          else
+            echo "Unexpected response received."
+            exit 1
+          fi
+        else
+          echo "Readiness check failed. Status code: $response"
+          exit 1
+        fi
+      env:
+        ALPHAGOMOKU_ENDPOINT_READY: https://alphagomoku.onrender.com/ready
