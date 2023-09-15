@@ -16,7 +16,7 @@ jobs:
         if [ "$response" -eq 200 ]; then
           echo "Readiness check passed."
           expected_response=$(curl -s ${{ env.ALPHAGOMOKU_ENDPOINT_READY }})
-          expected_json='{"message":"alphagomoku","status":200}'
+          expected_json='{"message":"alphagomoku","status":"200"}'
           if [[ "$expected_response" == *"$expected_json"* ]]; then
             echo "Expected response received."
           else
