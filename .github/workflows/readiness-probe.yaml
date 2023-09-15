@@ -15,7 +15,7 @@ jobs:
         timeout 60s curl -s -o /dev/null -w "%{http_code}" ${{ env.ALPHAGOMOKU_ENDPOINT_READY }}
         response_code=$?
         
-        if [ "$response_code" -eq 200 ]; then
+        if [ $response_code -eq 0 ]; then
           echo "Readiness check passed."
           expected_response=$(curl -s ${{ env.ALPHAGOMOKU_ENDPOINT_READY }})
           expected_json='{"message":"alphagomoku","status":"200"}'
@@ -25,8 +25,11 @@ jobs:
             echo "Unexpected response received."
             exit 1
           fi
+        elif [ $response_code -eq 124 ]; then
+          echo "Readiness check timed out after 1 minute."
+          exit 1
         else
-          echo "Readiness check failed. Status code: $response"
+          echo "Readiness check failed. Status code: $response_code"
           exit 1
         fi
       env:
