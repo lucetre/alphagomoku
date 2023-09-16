@@ -1,57 +1,92 @@
 /* styles.css */
+  
 body {
-    background: #fff0db;
-    margin: 0;
+  background: #fff0db;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
-button {
-    margin: 20px;
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 80vh;
 }
 
 .board {
-    display: grid;
-    grid-template-columns: repeat(18, 1fr);
-    grid-template-rows: repeat(18, 1fr);
-    grid-column-gap: 0px;
-    grid-row-gap: 0px;
-    width: 360px;
-    margin-left: 20px;
-    margin-top: 20px;
-    border: 1px solid black; /* Add this line for board lines */
+  display: grid;
+  grid-template-columns: repeat(18, 1fr);
+  grid-template-rows: repeat(18, 1fr);
+  grid-column-gap: 0px;
+  grid-row-gap: 0px;
+  width: 360px;
+  border: 0px solid transparent; /* Add this line for board lines */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .board div {
-    width: 20px;
-    height: 20px;
-    border: 1px solid black; /* Add this line for cell borders */
-    background: rgb(255, 180, 76);
+  width: 20px;
+  height: 20px;
+  border: 0.5px solid black; /* Add this line for cell borders */
+  background: rgb(255, 180, 76);
 }
 
 .board2 {
-    display: grid;
-    grid-template-columns: repeat(19, 1fr);
-    grid-template-rows: repeat(19, 1fr);
-    grid-column-gap: 0px;
-    grid-row-gap: 0px;
-    width: 380px;
-    position: absolute;
-    top: 9px;
-    left: 9px;
+  display: grid;
+  grid-template-columns: repeat(19, 1fr);
+  grid-template-rows: repeat(19, 1fr);
+  grid-column-gap: 0px;
+  grid-row-gap: 0px;
+  width: 380px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .board2 div {
-    width: 20px;
-    height: 20px;
-    border: 1px solid transparent;
-    background: rgb(255, 180, 76, 0.2);
+  width: 20px;
+  height: 20px;
+  border: 0.5px solid transparent;
+  background: rgb(255, 180, 76, 0.2);
 }
 
 .board2 div.b {
-    background: black;
-    border-radius: 50%;
+  background: black;
+  border-radius: 50%;
 }
 
 .board2 div.w {
-    background: white;
-    border-radius: 50%;
+  background: white;
+  border-radius: 50%;
+}
+
+footer {
+  background-color: #f8f8f8; /* Set your desired background color */
+  padding: 20px; /* Add padding for spacing */
+  text-align: center;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  margin: 10px;
+}
+
+footer button {
+  margin: 10px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
+footer p {
+  margin: 10px;
+}
+
+footer a {
+  color: #007bff; /* Change the color to your preference */
+  text-decoration: underline;
 }

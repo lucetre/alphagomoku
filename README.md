@@ -1,6 +1,9 @@
-## AlphaGomoku Server
-[![Readiness Probe on AlphaGomoku Server](https://github.com/lucetre/alphagomoku/actions/workflows/readiness-probe.yaml/badge.svg?branch=main)](https://github.com/lucetre/alphagomoku/actions/workflows/readiness-probe.yaml)
+# AlphaGomoku - Play Gomoku Against AI Powered by AlphaZero
 
+Challenge your skills in Gomoku! Play against an AI trained with AlphaZero and experience the ultimate Gomoku strategy game.
+
+## AlphaGomoku Flask Server
+[![Readiness Probe on AlphaGomoku Server](https://github.com/lucetre/alphagomoku/actions/workflows/readiness-probe.yaml/badge.svg?branch=main)](https://github.com/lucetre/alphagomoku/actions/workflows/readiness-probe.yaml)
 
 ### Cloned from AlphaZeroFromScratch
 Out of the box implementation based on the code of the tutorial: [AlphaZero](https://github.com/foersterrobert/AlphaZero)
