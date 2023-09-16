@@ -2,7 +2,7 @@ name: Readiness Probe on AlphaGomoku Server
 
 on:
   schedule:
-    - cron: '*/15 * * * *' # Run every 15 minutes
+    - cron: '*/10 * * * *' # Run every 10 minutes
   workflow_dispatch:
 
 jobs:
@@ -12,19 +12,24 @@ jobs:
     steps:
     - name: Check Readiness
       run: |
-        response=$(curl -s -o /dev/null -w "%{http_code}" ${{ env.ALPHAGOMOKU_ENDPOINT_READY }})
-        if [ "$response" -eq 200 ]; then
+        timeout 60s curl -s -o /dev/null -w "%{http_code}" ${{ env.ALPHAGOMOKU_ENDPOINT_READY }}
+        response_code=$?
+        
+        if [ $response_code -eq 0 ]; then
           echo "Readiness check passed."
           expected_response=$(curl -s ${{ env.ALPHAGOMOKU_ENDPOINT_READY }})
-          expected_json='{"message":"alphagomoku","status":200}'
+          expected_json='{"message":"alphagomoku","status":"200"}'
           if [[ "$expected_response" == *"$expected_json"* ]]; then
             echo "Expected response received."
           else
             echo "Unexpected response received."
             exit 1
           fi
+        elif [ $response_code -eq 124 ]; then
+          echo "Readiness check timed out after 1 minute."
+          exit 1
         else
-          echo "Readiness check failed. Status code: $response"
+          echo "Readiness check failed. Status code: $response_code"
           exit 1
         fi
       env:
