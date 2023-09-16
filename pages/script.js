@@ -6,27 +6,23 @@ document.addEventListener("DOMContentLoaded", function () {
   const resetButton = document.getElementById("resetButton");
 
   // Define constants for rows and columns
-  const N_ROWS = 19;
-  const N_COLS = 19;
-
-  // Set CSS properties dynamically based on N_ROWS and N_COLS
-  board.style.gridTemplateColumns = `repeat(${N_COLS - 1}, 1fr)`;
-  board.style.gridTemplateRows = `repeat(${N_ROWS - 1}, 1fr)`;
-  board.style.width = `${(N_COLS - 1) * 20}px`; // Assuming each cell is 20px wide
-  board2.style.gridTemplateColumns = `repeat(${N_COLS}, 1fr)`;
-  board2.style.gridTemplateRows = `repeat(${N_ROWS}, 1fr)`;
-  board2.style.width = `${N_COLS * 20}px`; // Assuming each cell is 20px wide
-
-  let arr = Array(N_ROWS * N_COLS).fill(0);
+  let N_ROWS = 19;
+  let N_COLS = 19;
 
   // Load data from URL if available
   const loadGameData = () => {
     const urlParams = new URLSearchParams(window.location.search);
-    const myParam = urlParams.get("a");
+    const paramA = urlParams.get("a");
+    const paramR = urlParams.get("r");
+    const paramC = urlParams.get("c");
 
+    if (paramR != null && paramC != null) {
+      N_ROWS = parseInt(paramR);
+      N_COLS = parseInt(paramC);
+    }
     createBoard();
-    if (myParam != null) {
-      let savedArray = JSON.parse(atob(myParam));
+    if (paramA != null) {
+      let savedArray = JSON.parse(atob(paramA));
       arr = [...savedArray];
       renderBoard2();
     } else {
@@ -35,6 +31,16 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   const createBoard = () => {
+    // Set CSS properties dynamically based on N_ROWS and N_COLS
+    board.style.gridTemplateColumns = `repeat(${N_COLS - 1}, 1fr)`;
+    board.style.gridTemplateRows = `repeat(${N_ROWS - 1}, 1fr)`;
+    board.style.width = `${(N_COLS - 1) * 20}px`; // Assuming each cell is 20px wide
+    board2.style.gridTemplateColumns = `repeat(${N_COLS}, 1fr)`;
+    board2.style.gridTemplateRows = `repeat(${N_ROWS}, 1fr)`;
+    board2.style.width = `${N_COLS * 20}px`; // Assuming each cell is 20px wide
+
+    arr = Array(N_ROWS * N_COLS).fill(0);
+
     board.innerHTML = "";
     for (let i = 0; i < (N_ROWS - 1) * (N_COLS - 1); i++) {
       board.insertAdjacentHTML("beforeend", `<div></div>`);
@@ -74,7 +80,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // Save data to URL
       let save = btoa(JSON.stringify(arr));
-      window.history.pushState({}, null, "?a=" + save);
+      window.history.pushState({}, null, `?r=${N_ROWS}&c=${N_COLS}&a=${save}`);
     }
   });
 
@@ -82,7 +88,7 @@ document.addEventListener("DOMContentLoaded", function () {
     arr = Array(N_ROWS * N_COLS).fill(0);
     createBoard2();
     let save = btoa(JSON.stringify(arr));
-    window.history.pushState({}, null, "?a=" + save);
+    window.history.pushState({}, null, `?r=${N_ROWS}&c=${N_COLS}&a=${save}`);
   });
 
   // Handle back button
