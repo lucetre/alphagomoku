@@ -12,7 +12,7 @@ jobs:
     steps:
     - name: Check Readiness
       run: |
-        timeout 60s curl -s -o /dev/null -w "%{http_code}" ${{ env.ALPHAGOMOKU_ENDPOINT_READY }}
+        timeout 10s curl -s -o /dev/null -w "%{http_code}" ${{ env.ALPHAGOMOKU_ENDPOINT_READY }}
         response_code=$?
         
         if [ $response_code -eq 0 ]; then
