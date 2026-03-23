@@ -119,31 +119,29 @@ export function GamePage() {
   }
 
   return (
-    <>
-      <div className="game-layout">
-        <div className="game-left">
-          <Controls
-            nextColor={game.nextColor}
-            moveCount={game.moves.length}
-            gameId={game.gameId}
-            onUndo={undo}
-            onRefresh={manualRefresh}
-            onNewGame={() => navigate("/")}
-          />
-          <Board
-            rows={game.rows}
-            cols={game.cols}
-            board={game.board}
-            moves={game.moves}
-            onCellClick={placeMove}
-          />
-        </div>
-        <div className="game-right">
-          <WebhookManager gameId={game.gameId} onLog={addLog} />
-          <ActivityLog logs={logs} />
-        </div>
+    <div className="game-layout">
+      <div className="game-left">
+        <Controls
+          nextColor={game.nextColor}
+          moveCount={game.moves.length}
+          gameId={game.gameId}
+          onUndo={undo}
+          onRefresh={manualRefresh}
+          onNewGame={() => navigate("/")}
+        />
+        <Board
+          rows={game.rows}
+          cols={game.cols}
+          board={game.board}
+          moves={game.moves}
+          onCellClick={placeMove}
+        />
       </div>
-      <ApiGuide gameId={game.gameId} onMoveSent={pollBoard} />
-    </>
+      <div className="game-right">
+        <WebhookManager gameId={game.gameId} onLog={addLog} />
+        <ApiGuide gameId={game.gameId} onMoveSent={pollBoard} />
+        <ActivityLog logs={logs} />
+      </div>
+    </div>
   );
 }
