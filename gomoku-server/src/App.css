@@ -465,6 +465,12 @@
   margin-bottom: 16px;
 }
 
+.api-examples {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 12px;
+}
+
 .api-example {
   background: var(--bg-card);
   border: 1px solid var(--border);

@@ -9,17 +9,20 @@ export function ApiGuide({ gameId, onMoveSent }: ApiGuideProps) {
   const base = window.location.origin;
   const [row, setRow] = useState(7);
   const [col, setCol] = useState(7);
-  const [copied, setCopied] = useState(false);
+  const [copiedMove, setCopiedMove] = useState(false);
+  const [copiedGet, setCopiedGet] = useState(false);
   const [sending, setSending] = useState(false);
 
-  const curl = `curl -X POST "${base}/api/games/${gameId}/move" \\
+  const curlMove = `curl -X POST "${base}/api/games/${gameId}/move" \\
   -H "Content-Type: application/json" \\
   -d '{ "row": ${row}, "col": ${col} }'`;
 
-  const copyToClipboard = async () => {
-    await navigator.clipboard.writeText(curl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+  const curlGet = `curl "${base}/api/games/${gameId}"`;
+
+  const copy = async (text: string, setter: (v: boolean) => void) => {
+    await navigator.clipboard.writeText(text);
+    setter(true);
+    setTimeout(() => setter(false), 1500);
   };
 
   const sendMove = async () => {
@@ -41,6 +44,7 @@ export function ApiGuide({ gameId, onMoveSent }: ApiGuideProps) {
   return (
     <div className="api-guide">
       <h3>API</h3>
+      <div className="api-examples">
       <div className="api-example">
         <div className="api-label">
           <span className="api-method post">POST</span>
@@ -66,15 +70,28 @@ export function ApiGuide({ gameId, onMoveSent }: ApiGuideProps) {
             />
           </label>
         </div>
-        <pre className="api-curl">{curl}</pre>
+        <pre className="api-curl">{curlMove}</pre>
         <div className="api-actions">
-          <button className="api-copy-btn" onClick={copyToClipboard}>
-            {copied ? "Copied!" : "Copy"}
+          <button className="api-copy-btn" onClick={() => copy(curlMove, setCopiedMove)}>
+            {copiedMove ? "Copied!" : "Copy"}
           </button>
           <button className="api-send-btn" onClick={sendMove} disabled={sending}>
             {sending ? "Sending..." : "Send"}
           </button>
         </div>
+      </div>
+      <div className="api-example">
+        <div className="api-label">
+          <span className="api-method get">GET</span>
+          Get board state
+        </div>
+        <pre className="api-curl">{curlGet}</pre>
+        <div className="api-actions">
+          <button className="api-copy-btn" onClick={() => copy(curlGet, setCopiedGet)}>
+            {copiedGet ? "Copied!" : "Copy"}
+          </button>
+        </div>
+      </div>
       </div>
     </div>
   );
