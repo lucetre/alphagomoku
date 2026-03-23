@@ -53,6 +53,7 @@ export function GamePage() {
     });
     const data = await res.json();
     if (res.ok) {
+      lastMoveCount.current = data.moves.length;
       setGame(data);
       addLog("MOVE", "ui", `${data.lastMove.color === "b" ? "Black" : "White"} at (${row}, ${col})`);
     } else {
@@ -65,6 +66,7 @@ export function GamePage() {
     const res = await fetch(`/api/games/${game.gameId}/undo`, { method: "POST" });
     const data = await res.json();
     if (res.ok) {
+      lastMoveCount.current = data.moves.length;
       setGame(data);
       addLog("UNDO", "ui", "Last move undone");
     } else {
