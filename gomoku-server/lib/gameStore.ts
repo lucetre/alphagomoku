@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import crypto from "node:crypto";
 
 export type Color = "b" | "w";
 
@@ -51,7 +51,7 @@ function toResponse(game: Game): GameResponse {
 }
 
 export function createGame(rows = 19, cols = 19): GameResponse {
-  const gameId = randomUUID().slice(0, 8);
+  const gameId = crypto.randomUUID().slice(0, 8);
   const board: (Color | null)[][] = Array.from({ length: rows }, () =>
     Array(cols).fill(null)
   );
@@ -120,7 +120,7 @@ export function addWebhook(gameId: string, url: string, color: Color): Webhook {
   const game = games.get(gameId);
   if (!game) throw new Error("Game not found");
 
-  const webhook: Webhook = { webhookId: randomUUID().slice(0, 8), url, color };
+  const webhook: Webhook = { webhookId: crypto.randomUUID().slice(0, 8), url, color };
   game.webhooks.set(webhook.webhookId, webhook);
   return webhook;
 }
