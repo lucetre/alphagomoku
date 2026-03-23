@@ -1,0 +1,2008 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCTS — 몬테카를로 트리 탐색 완전 가이드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0a0a0f;
+  --bg-card: #12121a;
+  --bg-card-hover: #1a1a28;
+  --border: #1e1e30;
+  --border-active: #3a3a5c;
+  --text: #c8c8d8;
+  --text-dim: #6a6a80;
+  --text-bright: #eeeef4;
+  --accent: #6c5ce7;
+  --accent-glow: #6c5ce740;
+  --green: #00b894;
+  --green-dim: #00b89430;
+  --red: #e17055;
+  --red-dim: #e1705530;
+  --yellow: #fdcb6e;
+  --yellow-dim: #fdcb6e30;
+  --blue: #74b9ff;
+  --blue-dim: #74b9ff30;
+  --cyan: #81ecec;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'IBM Plex Sans KR', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.8;
+  font-size: 16px;
+  overflow-x: hidden;
+}
+
+/* === NAVIGATION === */
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #0a0a0fdd;
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  transition: transform 0.3s;
+}
+
+nav .nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  height: 56px;
+  gap: 2rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+nav .nav-inner::-webkit-scrollbar { display: none; }
+
+nav a {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: color 0.2s;
+  letter-spacing: -0.01em;
+}
+
+nav a:hover, nav a.active { color: var(--accent); }
+
+nav .nav-logo {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  color: var(--text-bright);
+  font-size: 0.9rem;
+  letter-spacing: -0.03em;
+}
+
+/* === LAYOUT === */
+main {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 80px 2rem 6rem;
+}
+
+section {
+  margin-bottom: 6rem;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+section.animate {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+section.animate.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* === TYPOGRAPHY === */
+h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.8rem, 6vw, 4.2rem);
+  font-weight: 900;
+  color: var(--text-bright);
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  margin-bottom: 1.2rem;
+}
+
+h1 .accent { color: var(--accent); }
+
+h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 1.2rem;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+h2 .num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-glow);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin: 2rem 0 0.8rem;
+  letter-spacing: -0.01em;
+}
+
+p { margin-bottom: 1rem; }
+
+strong { color: var(--text-bright); font-weight: 600; }
+
+/* === CARDS & BLOCKS === */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  transition: border-color 0.2s;
+}
+
+.card:hover { border-color: var(--border-active); }
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.stat-card .label {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.5rem;
+}
+
+.stat-card .value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text-bright);
+}
+
+.stat-card .note {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin-top: 0.4rem;
+}
+
+.stat-card.possible .value { color: var(--green); }
+.stat-card.impossible .value { color: var(--red); }
+
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.88em;
+  background: #1a1a2a;
+  padding: 0.15em 0.45em;
+  border-radius: 4px;
+  color: var(--cyan);
+}
+
+pre {
+  background: #0e0e18;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.2rem 1.5rem;
+  overflow-x: auto;
+  margin: 1.2rem 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+pre .kw { color: var(--accent); }
+pre .fn { color: var(--blue); }
+pre .str { color: var(--green); }
+pre .cm { color: var(--text-dim); }
+pre .num { color: var(--yellow); }
+
+.formula-box {
+  background: linear-gradient(135deg, #1a1a2a, #14142a);
+  border: 1px solid var(--accent-glow);
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  padding: 1.5rem 1.8rem;
+  margin: 1.5rem 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.1rem;
+  text-align: center;
+  color: var(--text-bright);
+  letter-spacing: 0.02em;
+}
+
+.formula-box .explain {
+  font-family: 'IBM Plex Sans KR', sans-serif;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  margin-top: 0.8rem;
+  letter-spacing: 0;
+}
+
+.callout {
+  border-left: 3px solid var(--yellow);
+  background: var(--yellow-dim);
+  padding: 1rem 1.2rem;
+  border-radius: 0 8px 8px 0;
+  margin: 1.5rem 0;
+  font-size: 0.92rem;
+}
+
+.callout.info {
+  border-left-color: var(--blue);
+  background: var(--blue-dim);
+}
+
+.callout.success {
+  border-left-color: var(--green);
+  background: var(--green-dim);
+}
+
+.tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tag.exploit { background: var(--green-dim); color: var(--green); }
+.tag.explore { background: var(--blue-dim); color: var(--blue); }
+
+/* === HERO === */
+.hero {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 4rem;
+}
+
+.hero .subtitle {
+  font-size: 1rem;
+  color: var(--text-dim);
+  font-weight: 400;
+  max-width: 540px;
+  line-height: 1.7;
+}
+
+.hero-bg {
+  position: absolute;
+  top: -120px;
+  right: -200px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+/* === INTERACTIVE: MCTS TREE ANIMATION === */
+.mcts-demo {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+}
+
+.mcts-demo .controls {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.mcts-demo .controls button, .btn {
+  font-family: 'IBM Plex Sans KR', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mcts-demo .controls button:hover, .btn:hover {
+  border-color: var(--accent);
+  color: var(--text-bright);
+  background: #1a1a28;
+}
+
+.mcts-demo .controls button.active, .btn.active {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+  color: var(--text-bright);
+}
+
+.mcts-canvas {
+  width: 100%;
+  height: 400px;
+  border-radius: 10px;
+  background: #08080e;
+  display: block;
+}
+
+.mcts-info {
+  margin-top: 1rem;
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  min-height: 2.5em;
+  padding: 0.8rem 1rem;
+  background: #08080e;
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1.6;
+}
+
+.mcts-info .stage { color: var(--accent); font-weight: 600; }
+.mcts-info .highlight { color: var(--text-bright); }
+
+/* === INTERACTIVE: UCB CALCULATOR === */
+.ucb-calc {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.8rem;
+  margin: 2rem 0;
+}
+
+.slider-group {
+  margin-bottom: 1.2rem;
+}
+
+.slider-group label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  margin-bottom: 0.4rem;
+}
+
+.slider-group label .var-name {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--cyan);
+}
+
+.slider-group label .var-val {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-bright);
+  font-weight: 600;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.ucb-result {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.ucb-result .part {
+  background: #08080e;
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.ucb-result .part .part-label {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.4rem;
+}
+
+.ucb-result .part .part-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.ucb-result .exploit-part .part-value { color: var(--green); }
+.ucb-result .explore-part .part-value { color: var(--blue); }
+.ucb-result .total-part .part-value { color: var(--accent); }
+
+.ucb-bar-visual {
+  margin-top: 1rem;
+  height: 32px;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  background: #08080e;
+}
+
+.ucb-bar-visual .exploit-bar {
+  background: var(--green);
+  transition: width 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #000;
+}
+
+.ucb-bar-visual .explore-bar {
+  background: var(--blue);
+  transition: width 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #000;
+}
+
+/* === INTERACTIVE: BANDIT SIMULATOR === */
+.bandit-sim {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.8rem;
+  margin: 2rem 0;
+}
+
+.machines {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.8rem;
+  margin: 1.2rem 0;
+}
+
+.machine {
+  background: #08080e;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  position: relative;
+}
+
+.machine.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.machine.win { border-color: var(--green); box-shadow: 0 0 15px var(--green-dim); }
+.machine.lose { border-color: var(--red); box-shadow: 0 0 15px var(--red-dim); }
+
+.machine .machine-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-bottom: 0.3rem;
+}
+
+.machine .machine-icon {
+  font-size: 2rem;
+  margin: 0.3rem 0;
+  filter: grayscale(0.3);
+}
+
+.machine .machine-stats {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.machine .machine-stats .win-rate {
+  color: var(--text-bright);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.machine .machine-ucb {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--accent);
+  margin-top: 0.3rem;
+}
+
+.machine .true-prob {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.bandit-sim.show-truth .machine .true-prob { opacity: 1; }
+
+.bandit-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.bandit-stats .stat {
+  background: #08080e;
+  border-radius: 8px;
+  padding: 0.8rem;
+  text-align: center;
+}
+
+.bandit-stats .stat .stat-label {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.bandit-stats .stat .stat-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-bright);
+}
+
+/* === Q-VALUE TRANSFORM === */
+.q-transform {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+.q-step {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.2rem;
+}
+
+.q-step .step-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--accent);
+  margin-bottom: 0.3rem;
+}
+
+.q-step .step-formula {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--text-bright);
+  margin: 0.5rem 0;
+}
+
+.q-step .step-range {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.q-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: 1.2rem;
+}
+
+/* === TIMELINE === */
+.timeline {
+  position: relative;
+  padding-left: 2rem;
+  margin: 2rem 0;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 1.5rem;
+  padding-left: 1rem;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -2rem;
+  top: 8px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.timeline-item .year {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.timeline-item .event {
+  color: var(--text-bright);
+  font-weight: 500;
+}
+
+/* === STEP FLOW === */
+.step-flow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.6rem;
+  margin: 1.5rem 0;
+}
+
+.step-flow .step {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 0.8rem;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.step-flow .step.active {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.step-flow .step .step-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.step-flow .step .step-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin-bottom: 0.2rem;
+}
+
+.step-flow .step .step-desc {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* === UCB VARIANTS TABLE === */
+.variants-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.85rem;
+}
+
+.variants-table th {
+  text-align: left;
+  padding: 0.7rem 1rem;
+  border-bottom: 2px solid var(--border);
+  color: var(--text-dim);
+  font-weight: 500;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.variants-table td {
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.variants-table td:first-child {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--cyan);
+  font-weight: 500;
+  font-size: 0.82rem;
+}
+
+.variants-table tr:hover td { background: #0e0e1a; }
+
+/* === PI ESTIMATOR === */
+.pi-demo {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.pi-canvas-wrap {
+  position: relative;
+}
+
+.pi-canvas {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  background: #08080e;
+  display: block;
+}
+
+.pi-stats {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.pi-stats .pi-value {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 0.5rem;
+}
+
+.pi-stats .pi-label {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin-bottom: 1rem;
+}
+
+.pi-stats .pi-detail {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.8;
+}
+
+.pi-stats .pi-detail .val { color: var(--text-bright); }
+
+/* === FOOTER === */
+footer {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  border-top: 1px solid var(--border);
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 680px) {
+  main { padding: 70px 1.2rem 4rem; }
+  .step-flow { grid-template-columns: repeat(2, 1fr); }
+  .ucb-result { grid-template-columns: 1fr; }
+  .q-transform { grid-template-columns: 1fr; }
+  .q-arrow { transform: rotate(90deg); }
+  .pi-demo { grid-template-columns: 1fr; }
+  .bandit-stats { grid-template-columns: 1fr; }
+  nav .nav-inner { gap: 1.2rem; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <span class="nav-logo">MCTS</span>
+    <a href="#problem">문제</a>
+    <a href="#classical">기존 접근</a>
+    <a href="#montecarlo">몬테카를로</a>
+    <a href="#history">역사</a>
+    <a href="#four-steps">4단계</a>
+    <a href="#bandit">밴딧 문제</a>
+    <a href="#ucb">UCB</a>
+    <a href="#qvalue">Q-Value</a>
+    <a href="#details">실전</a>
+    <a href="#alphago">AlphaGo</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- ========== HERO ========== -->
+<section class="hero" id="top">
+  <div class="hero-bg"></div>
+  <h1>Monte Carlo<br><span class="accent">Tree Search</span></h1>
+  <p class="subtitle">
+    "잘 모르겠으면 여러 번 랜덤으로 해보고 통계를 내자"라는 단순한 아이디어에,
+    "유망한 쪽을 더 많이 해보자"라는 트리 탐색을 결합한 알고리즘.
+    게임 AI의 역사를 바꾼 MCTS를 처음부터 끝까지.
+  </p>
+</section>
+
+<!-- ========== 1. PROBLEM ========== -->
+<section id="problem">
+  <h2><span class="num">01</span> 왜 모든 수를 볼 수 없는가</h2>
+  <p>
+    바둑, 체스, 오목 같은 게임에서 "최선의 수"를 찾는 가장 확실한 방법은 <strong>모든 가능한 경우를 끝까지 탐색</strong>하는 것입니다.
+    하지만 게임의 복잡도는 상상을 초월합니다.
+  </p>
+
+  <div class="card-grid">
+    <div class="stat-card possible">
+      <div class="label">틱택토</div>
+      <div class="value">~10<sup>5</sup></div>
+      <div class="note">완전 탐색 가능</div>
+    </div>
+    <div class="stat-card impossible">
+      <div class="label">체스</div>
+      <div class="value">~10<sup>120</sup></div>
+      <div class="note">우주 원자 수(10⁸⁰)보다 많음</div>
+    </div>
+    <div class="stat-card impossible">
+      <div class="label">바둑</div>
+      <div class="value">~10<sup>360</sup></div>
+      <div class="note">완전히 불가능</div>
+    </div>
+  </div>
+
+  <p>
+    그래서 <strong>"전부 다 보지 않으면서도 좋은 수를 찾는 방법"</strong>이 필요합니다.
+    이것이 게임 AI 연구의 핵심 문제입니다.
+  </p>
+</section>
+
+<!-- ========== 2. CLASSICAL ========== -->
+<section id="classical">
+  <h2><span class="num">02</span> 기존 접근: Minimax</h2>
+  <p>
+    전통적인 게임 AI는 <strong>Minimax + Alpha-Beta Pruning</strong> 방식이었습니다.
+    "나는 최선을, 상대는 최악을 선택한다"고 가정하고 트리를 탐색하되, 가망 없는 가지를 잘라내는(pruning) 방식입니다.
+  </p>
+
+  <div class="card">
+    <h3>체스에서는 성공</h3>
+    <p>1997년, IBM의 <strong>Deep Blue</strong>가 세계 챔피언 카스파로프를 이긴 것이 이 계열입니다. 체스는 말의 점수, 위치 등으로 평가 함수를 만들 수 있었습니다.</p>
+
+    <h3>바둑에서는 실패</h3>
+    <p>하지만 바둑은 두 가지 문제가 있었습니다:</p>
+    <p>
+      <strong>1. 평가 함수를 만들 수 없다</strong> — 돌의 영향력, 세력, 집 등이 너무 복잡해서 "이 보드가 얼마나 유리한가"를 점수로 매기는 것이 극도로 어려움<br>
+      <strong>2. 가지가 너무 많다</strong> — 한 턴에 200수 이상 가능. 가지치기를 해도 감당 불가
+    </p>
+    <p>결과적으로 바둑 AI는 수십 년간 아마추어 수준에 머물렀습니다.</p>
+  </div>
+
+  <div class="callout">
+    Minimax의 근본적 한계: 인간이 설계한 <strong>평가 함수(evaluation function)</strong>에 의존한다는 것. 이 함수를 만들 수 없으면 무용지물입니다.
+  </div>
+</section>
+
+<!-- ========== 3. MONTE CARLO ========== -->
+<section id="montecarlo">
+  <h2><span class="num">03</span> 몬테카를로 방법</h2>
+  <p>
+    "Monte Carlo"는 <strong>랜덤 샘플링으로 답을 추정하는 방법론</strong> 전체를 가리킵니다.
+    이름은 모나코의 몬테카를로 카지노에서 따왔습니다 — 주사위를 많이 굴려서 확률을 추정한다는 비유입니다.
+  </p>
+
+  <h3>예시: π 추정하기</h3>
+  <p>정사각형 안에 점을 랜덤으로 찍어서, 원 안에 들어간 비율로 π를 추정할 수 있습니다.</p>
+
+  <div class="pi-demo">
+    <div class="pi-canvas-wrap">
+      <canvas class="pi-canvas" id="piCanvas"></canvas>
+    </div>
+    <div class="pi-stats">
+      <div class="pi-value" id="piValue">π ≈ ?</div>
+      <div class="pi-label">π = 4 × (원 안의 점 / 전체 점)</div>
+      <div class="pi-detail">
+        전체: <span class="val" id="piTotal">0</span><br>
+        원 안: <span class="val" id="piInside">0</span><br>
+        실제 π: <span class="val">3.14159...</span>
+      </div>
+      <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <button class="btn" onclick="piStart()">시작</button>
+        <button class="btn" onclick="piReset()">리셋</button>
+        <button class="btn" onclick="piAdd(100)">+100점</button>
+        <button class="btn" onclick="piAdd(1000)">+1000점</button>
+      </div>
+    </div>
+  </div>
+
+  <h3>게임에 적용하면?</h3>
+  <p>
+    <strong>"이 수를 둔 뒤 랜덤으로 끝까지 플레이해 보고, 이겼는지 졌는지 세자."</strong>
+    이걸 수천 번 반복하면, 승률이 높은 수 = 좋은 수라고 추정할 수 있습니다.
+    평가 함수가 전혀 필요 없습니다 — 끝까지 해보면 승패를 알 수 있으니까요.
+  </p>
+</section>
+
+<!-- ========== 4. HISTORY ========== -->
+<section id="history">
+  <h2><span class="num">04</span> MCTS의 탄생</h2>
+  <p>2006년, 두 가지 핵심 연구가 발표됩니다.</p>
+
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="year">1997</div>
+      <div class="event">Deep Blue, 체스 세계 챔피언 카스파로프 격파</div>
+      <p>Minimax + 평가함수의 정점. 하지만 바둑에는 적용 불가.</p>
+    </div>
+    <div class="timeline-item">
+      <div class="year">2006</div>
+      <div class="event">Rémi Coulom — Crazy Stone</div>
+      <p>바둑 프로그램에 몬테카를로 시뮬레이션과 트리 탐색을 결합. MCTS의 실질적 시작.</p>
+    </div>
+    <div class="timeline-item">
+      <div class="year">2006</div>
+      <div class="event">Kocsis & Szepesvári — UCT 논문</div>
+      <p>UCB1을 트리 탐색에 적용한 <strong>UCT(Upper Confidence bounds applied to Trees)</strong>를 수학적으로 정립. Exploration과 exploitation의 균형을 이론적으로 보장.</p>
+    </div>
+    <div class="timeline-item">
+      <div class="year">2016</div>
+      <div class="event">DeepMind — AlphaGo</div>
+      <p>MCTS + 딥러닝. 랜덤 시뮬레이션을 신경망 평가로 대체. 이세돌 9단 격파.</p>
+    </div>
+    <div class="timeline-item">
+      <div class="year">2017</div>
+      <div class="event">AlphaGo Zero / AlphaZero</div>
+      <p>인간 기보 없이 자기 대국(self-play)만으로 학습. 바둑, 체스, 장기를 모두 정복.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 5. FOUR STEPS ========== -->
+<section id="four-steps">
+  <h2><span class="num">05</span> MCTS의 4단계</h2>
+  <p>한 번의 "탐색"은 이 4단계를 거칩니다. 이걸 수백~수천 번 반복합니다.</p>
+
+  <div class="step-flow" id="stepFlow">
+    <div class="step" data-step="0">
+      <div class="step-icon">🔍</div>
+      <div class="step-name">Selection</div>
+      <div class="step-desc">UCB로 유망한 자식 선택하며 내려감</div>
+    </div>
+    <div class="step" data-step="1">
+      <div class="step-icon">🌱</div>
+      <div class="step-name">Expansion</div>
+      <div class="step-desc">미시도 수 하나를 자식으로 추가</div>
+    </div>
+    <div class="step" data-step="2">
+      <div class="step-icon">🎲</div>
+      <div class="step-name">Simulation</div>
+      <div class="step-desc">끝까지 랜덤 플레이</div>
+    </div>
+    <div class="step" data-step="3">
+      <div class="step-icon">⬆️</div>
+      <div class="step-name">Backpropagation</div>
+      <div class="step-desc">결과를 루트까지 역전파</div>
+    </div>
+  </div>
+
+  <div class="mcts-demo">
+    <div class="controls">
+      <button onclick="mctsStep()" id="mctsStepBtn">다음 단계</button>
+      <button onclick="mctsFullSearch()">탐색 1회 (자동)</button>
+      <button onclick="mctsRun10()">10회 연속 탐색</button>
+      <button onclick="mctsReset()">리셋</button>
+      <span style="margin-left: auto; font-family: 'JetBrains Mono'; font-size: 0.8rem; color: var(--text-dim); display:flex; align-items:center;" id="mctsSearchCount">탐색: 0회</span>
+    </div>
+    <canvas class="mcts-canvas" id="mctsCanvas"></canvas>
+    <div class="mcts-info" id="mctsInfo">
+      <span class="stage">준비</span> — "다음 단계" 또는 "탐색 1회"를 눌러 MCTS를 시작하세요.
+    </div>
+  </div>
+</section>
+
+<!-- ========== 6. BANDIT ========== -->
+<section id="bandit">
+  <h2><span class="num">06</span> Multi-Armed Bandit 문제</h2>
+  <p>
+    UCB를 이해하려면 먼저 이 문제를 알아야 합니다.
+  </p>
+  <p>
+    카지노에 슬롯머신이 여러 대 있습니다. 각 머신마다 당첨 확률이 다르지만, 당신은 그 확률을 모릅니다.
+    코인이 한정되어 있고, 총 상금을 최대화하고 싶습니다.
+  </p>
+
+  <div class="card" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+    <div>
+      <h3><span class="tag exploit">Exploitation</span></h3>
+      <p>지금까지 결과가 좋았던 머신을 계속 당기기. 확실한 것을 활용. 하지만 진짜 최선을 놓칠 수 있음.</p>
+    </div>
+    <div>
+      <h3><span class="tag explore">Exploration</span></h3>
+      <p>아직 별로 안 해본 머신도 시도해 보기. 불확실한 것을 탐험. 하지만 이미 아는 좋은 것을 활용 못 함.</p>
+    </div>
+  </div>
+
+  <h3>UCB1 전략 시뮬레이터</h3>
+  <p>5대의 슬롯머신을 UCB1 전략으로 당기는 시뮬레이션입니다. 각 머신은 숨겨진 당첨 확률을 갖고 있습니다.</p>
+
+  <div class="bandit-sim" id="banditSim">
+    <div class="controls" style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+      <button class="btn" onclick="banditStep()">1회 시도</button>
+      <button class="btn" onclick="banditRun(10)">10회</button>
+      <button class="btn" onclick="banditRun(100)">100회</button>
+      <button class="btn" onclick="banditRun(500)">500회</button>
+      <button class="btn" onclick="banditToggleTruth()">확률 공개</button>
+      <button class="btn" onclick="banditReset()">리셋</button>
+    </div>
+    <div class="machines" id="banditMachines"></div>
+    <div class="bandit-stats">
+      <div class="stat">
+        <div class="stat-label">총 시도</div>
+        <div class="stat-value" id="banditTotal">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">총 보상</div>
+        <div class="stat-value" id="banditReward">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">최적 대비 효율</div>
+        <div class="stat-value" id="banditEfficiency">—</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 7. UCB ========== -->
+<section id="ucb">
+  <h2><span class="num">07</span> UCB — Upper Confidence Bound</h2>
+
+  <h3>핵심 철학: "Optimism in the Face of Uncertainty"</h3>
+  <p>
+    불확실할수록 낙관적으로 추정합니다.
+    각 선택지의 진짜 가치를 모르니까, 관측된 평균에 <strong>"불확실성 보너스"</strong>를 더합니다.
+  </p>
+
+  <div class="formula-box">
+    UCB1(i) = X̄ᵢ + C × √(ln N / nᵢ)
+    <div class="explain">
+      X̄ᵢ = 평균 보상 (exploitation) &nbsp;|&nbsp; C × √(ln N / nᵢ) = 불확실성 보너스 (exploration)
+    </div>
+  </div>
+
+  <h3>이름의 의미</h3>
+  <p>
+    통계학의 <strong>신뢰구간(confidence interval)</strong>에서 옵니다.
+    동전을 10번 던져서 7번 앞면이 나왔다면, 진짜 확률의 95% 신뢰구간은 35%~93%입니다.
+    100번 던져서 70번이면 60%~79%로 좁아집니다.
+  </p>
+  <p>
+    UCB는 이 신뢰구간의 <strong>상한(upper bound)</strong>을 기준으로 선택합니다.
+    많이 시도한 쪽은 구간이 좁아서 상한이 평균에 가깝고, 적게 시도한 쪽은 구간이 넓어서 상한이 높습니다.
+  </p>
+
+  <h3>이론적 토대: Hoeffding 부등식</h3>
+  <div class="card">
+    <p>√(ln N / nᵢ) 항은 <strong>Hoeffding's inequality</strong>에서 유도됩니다.</p>
+    <div class="formula-box" style="font-size: 0.95rem;">
+      P(|X̄ - μ| ≥ t) ≤ 2·exp(-2n·t²)
+      <div class="explain">
+        n번 독립 시행의 관측 평균 X̄가 진짜 평균 μ에서 t 이상 벗어날 확률의 상한
+      </div>
+    </div>
+    <p>이 부등식의 조건은 딱 두 가지뿐입니다:</p>
+    <p>
+      <strong>1.</strong> 시행이 <strong>독립</strong>일 것<br>
+      <strong>2.</strong> 값이 <strong>유한한 범위</strong> [a, b] 안에 있을 것
+    </p>
+    <p>분포의 모양은 상관없습니다. 어떤 분포든 성립합니다. 그래서 UCB가 게임 종류에 관계없이 적용 가능한 이유이기도 합니다. 단, 조건이 느슨한 만큼 보수적인(느슨한) 부등식입니다.</p>
+  </div>
+
+  <div class="callout success">
+    <strong>Regret bound:</strong> UCB1의 regret은 O(ln T)로 증가합니다 (T = 총 시행 횟수). 이는 이론적으로 달성 가능한 최선의 증가율입니다. 즉, UCB1은 최적에 가까운 전략입니다.
+  </div>
+
+  <h3>인터랙티브 UCB 계산기</h3>
+  <p>슬라이더를 조절하면서 exploitation과 exploration의 균형이 어떻게 변하는지 확인해 보세요.</p>
+
+  <div class="ucb-calc">
+    <div class="slider-group">
+      <label>
+        <span class="var-name">C (탐험 상수)</span>
+        <span class="var-val" id="ucbC_val">1.41</span>
+      </label>
+      <input type="range" id="ucbC" min="0" max="3" step="0.01" value="1.41" oninput="updateUCB()">
+    </div>
+    <div class="slider-group">
+      <label>
+        <span class="var-name">child.visit_count (nᵢ)</span>
+        <span class="var-val" id="ucbNi_val">10</span>
+      </label>
+      <input type="range" id="ucbNi" min="1" max="200" step="1" value="10" oninput="updateUCB()">
+    </div>
+    <div class="slider-group">
+      <label>
+        <span class="var-name">parent.visit_count (N)</span>
+        <span class="var-val" id="ucbN_val">100</span>
+      </label>
+      <input type="range" id="ucbN" min="1" max="1000" step="1" value="100" oninput="updateUCB()">
+    </div>
+    <div class="slider-group">
+      <label>
+        <span class="var-name">child.value_sum / visit_count (평균 가치, child 시점)</span>
+        <span class="var-val" id="ucbV_val">0.30</span>
+      </label>
+      <input type="range" id="ucbV" min="-1" max="1" step="0.01" value="0.3" oninput="updateUCB()">
+    </div>
+
+    <div class="ucb-result">
+      <div class="part exploit-part">
+        <div class="part-label">Exploitation (Q)</div>
+        <div class="part-value" id="ucbExploit">0.35</div>
+      </div>
+      <div class="part explore-part">
+        <div class="part-label">Exploration</div>
+        <div class="part-value" id="ucbExplore">0.68</div>
+      </div>
+      <div class="part total-part">
+        <div class="part-label">UCB Total</div>
+        <div class="part-value" id="ucbTotal">1.03</div>
+      </div>
+    </div>
+
+    <div class="ucb-bar-visual" id="ucbBar">
+      <div class="exploit-bar" id="ucbExploitBar" style="width: 34%">Q</div>
+      <div class="explore-bar" id="ucbExploreBar" style="width: 66%">Explore</div>
+    </div>
+  </div>
+
+  <h3>UCB 변형들</h3>
+  <table class="variants-table">
+    <thead>
+      <tr><th>이름</th><th>특징</th><th>사용처</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>UCB1</td><td>가장 기본. √(ln N / nᵢ) 기반</td><td>범용, MCTS 기본</td></tr>
+      <tr><td>UCB2</td><td>epoch 기반, 더 타이트한 regret bound</td><td>이론적 관심 위주, 실전 드뭄</td></tr>
+      <tr><td>UCB-V</td><td>분산(variance)도 고려</td><td>보상 분산이 큰 경우</td></tr>
+      <tr><td>KL-UCB</td><td>KL divergence 기반, 이론적 최적에 가까움</td><td>베르누이 보상</td></tr>
+      <tr><td>PUCT</td><td>Policy network 확률을 exploration에 반영</td><td>AlphaGo, AlphaZero</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ========== 8. Q-VALUE ========== -->
+<section id="qvalue">
+  <h2><span class="num">08</span> Q-Value 변환</h2>
+  <p>노트북 코드의 <code>get_ucb()</code>에서 q_value 변환이 왜 필요한지, 단계별로 봅니다.</p>
+
+  <pre><span class="kw">def</span> <span class="fn">get_ucb</span>(self, child):
+    q_value = <span class="num">1</span> - ((child.value_sum / child.visit_count) + <span class="num">1</span>) / <span class="num">2</span>
+    <span class="kw">return</span> q_value + self.args[<span class="str">'C'</span>] * math.<span class="fn">sqrt</span>(math.<span class="fn">log</span>(self.visit_count) / child.visit_count)</pre>
+
+  <div style="display:grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 0.8rem; margin: 1.5rem 0; align-items: stretch;">
+    <div class="q-step">
+      <div class="step-num">STEP 1</div>
+      <h3 style="font-size:0.9rem; margin:0.3rem 0;">원본 평균</h3>
+      <div class="step-formula">v / n</div>
+      <div class="step-range">범위: [-1, 1]</div>
+      <p style="font-size:0.78rem; color:var(--text-dim); margin-top:0.5rem;">
+        child 시점의 평균 가치.<br>
+        -1 = 전패, 0 = 무승부, +1 = 전승
+      </p>
+    </div>
+    <div class="q-arrow">→</div>
+    <div class="q-step">
+      <div class="step-num">STEP 2</div>
+      <h3 style="font-size:0.9rem; margin:0.3rem 0;">[0,1] 정규화</h3>
+      <div class="step-formula">(v/n + 1) / 2</div>
+      <div class="step-range">범위: [0, 1]</div>
+      <p style="font-size:0.78rem; color:var(--text-dim); margin-top:0.5rem;">
+        UCB1은 [0,1] 보상을 가정.<br>
+        -1→0, 0→0.5, +1→1
+      </p>
+    </div>
+    <div class="q-arrow">→</div>
+    <div class="q-step">
+      <div class="step-num">STEP 3</div>
+      <h3 style="font-size:0.9rem; margin:0.3rem 0;">시점 뒤집기</h3>
+      <div class="step-formula">1 - (위의 값)</div>
+      <div class="step-range">범위: [0, 1]</div>
+      <p style="font-size:0.78rem; color:var(--text-dim); margin-top:0.5rem;">
+        부모(상대) 시점으로 전환.<br>
+        child 전패(0)→부모에겐 1(좋음)
+      </p>
+    </div>
+  </div>
+
+  <div class="callout info">
+    왜 시점을 뒤집나? — 부모가 자식 중 하나를 <strong>선택</strong>하는 상황입니다. 자식 노드는 상대의 턴이므로, 자식이 이기면 부모에겐 나쁜 것입니다. 따라서 자식의 가치를 뒤집어야 부모 시점의 올바른 판단이 됩니다.
+  </div>
+</section>
+
+<!-- ========== 9. DETAILS ========== -->
+<section id="details">
+  <h2><span class="num">09</span> 실전 디테일</h2>
+
+  <div class="card">
+    <h3>미방문 자식 처리</h3>
+    <p>
+      <code>visit_count = 0</code>이면 UCB 공식의 분모가 0이라 계산 불가능합니다.
+      코드는 이 문제를 <strong>구조적으로 회피</strong>합니다:
+    </p>
+    <p>
+      <code>select()</code>는 <code>is_fully_expanded()</code>일 때만 호출됩니다 — 즉 모든 자식이 최소 1번은 방문된 상태에서만 UCB 비교가 일어납니다.
+      아직 안 만든 수가 남아 있으면 <code>expand()</code>에서 <strong>랜덤 하나를 골라</strong> 새 자식을 만듭니다.
+    </p>
+    <p>
+      따라서 초반에는 자식 수만큼 탐색하면 모든 자식을 한 번씩 거치게 되고, 그 과정은 완전 랜덤입니다.
+      <strong>그 이후부터 UCB 기반 선택이 시작</strong>됩니다.
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>메모리: 탐색한 노드만 저장</h3>
+    <p>
+      Expansion에서 한 번에 하나씩 추가하므로, <strong>N번 탐색 → 최대 N개 노드</strong>입니다 (선형).
+      Simulation(랜덤 플레이) 과정은 트리에 기록하지 않고 버립니다.
+    </p>
+    <p>
+      10만 번 탐색해도 10만 개 노드 — 각 노드에 보드 상태 + visit_count + value_sum만 저장하면 됩니다.
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>이전 턴 결과 재활용</h3>
+    <p>
+      내가 수A를 뒀고, 상대가 수B로 응수했다면, 기존 트리에서 루트→A→B 경로의 서브트리를 새 루트로 재사용할 수 있습니다.
+      초반에는 가지가 많아 재활용 가능한 서브트리가 작을 수 있지만, 버리는 것보다는 낫기 때문에 대부분 재활용합니다.
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>같은 턴 내 순차적 누적</h3>
+    <p>
+      1000번 탐색은 독립이 아니라 <strong>순차적으로 누적</strong>됩니다.
+      매 탐색마다 트리 전체의 통계가 업데이트되고, 다음 탐색의 Selection이 그 통계를 즉시 반영합니다.
+    </p>
+    <p>
+      한 번 졌다고 영원히 안 가는 게 아니라, exploration 보너스 덕분에 다시 방문하게 되고,
+      그때 다른 결과가 나오면 평가가 수정됩니다.
+    </p>
+  </div>
+</section>
+
+<!-- ========== 10. ALPHAGO ========== -->
+<section id="alphago">
+  <h2><span class="num">10</span> AlphaGo로의 발전</h2>
+  <p>
+    기본 MCTS의 가장 큰 약점은 <strong>Simulation</strong> 단계입니다.
+    완전히 랜덤으로 끝까지 플레이하는 것은 특히 바둑처럼 복잡한 게임에서 부정확합니다.
+  </p>
+
+  <div class="card" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+    <div>
+      <h3>기본 MCTS</h3>
+      <p style="font-size: 0.9rem;">
+        <strong>Selection:</strong> UCB로 선택<br>
+        <strong>Expansion:</strong> 자식 추가<br>
+        <strong>Simulation:</strong> <span style="color:var(--red);">랜덤 플레이 (rollout)</span><br>
+        <strong>Backpropagation:</strong> 결과 전파
+      </p>
+      <p style="font-size: 0.82rem; color: var(--text-dim);">시뮬레이션이 랜덤이라 부정확. 바둑에서 한 턴에 수백 수를 랜덤으로 두면 의미 있는 결과를 기대하기 어려움.</p>
+    </div>
+    <div>
+      <h3>AlphaGo / AlphaZero</h3>
+      <p style="font-size: 0.9rem;">
+        <strong>Selection:</strong> <span style="color:var(--green);">PUCT (policy network 안내)</span><br>
+        <strong>Expansion:</strong> 자식 추가<br>
+        <strong>Simulation:</strong> <span style="color:var(--green);">신경망이 가치 평가 (value network)</span><br>
+        <strong>Backpropagation:</strong> 결과 전파
+      </p>
+      <p style="font-size: 0.82rem; color: var(--text-dim);">끝까지 안 가도 됨. 신경망이 "이 상태는 몇 점짜리"를 바로 평가. 어떤 수를 먼저 탐색할지도 신경망이 안내.</p>
+    </div>
+  </div>
+
+  <div class="callout success">
+    <strong>핵심 통찰:</strong> MCTS의 프레임워크는 그대로 유지하되, 가장 약한 고리(랜덤 시뮬레이션)를 신경망으로 교체한 것입니다.
+    이 프로젝트의 노트북 <code>4.AlphaMCTS.ipynb</code>이 바로 이 발전을 다룹니다.
+  </div>
+
+  <div class="formula-box">
+    PUCT(i) = Q(i) + C × P(i) × √N / (1 + nᵢ)
+    <div class="explain">
+      P(i) = policy network이 예측한 "이 수를 둘 확률". 신경망이 유망하다고 판단한 수에 exploration 보너스를 더 부여.
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  MCTS 인터랙티브 가이드 — alphagomoku 프로젝트
+</footer>
+
+<script>
+(function() {
+  'use strict';
+
+  // ============================================================
+  // DOM REFS (set on init)
+  // ============================================================
+  let piCanvas, piCtx;
+  let mctsCanvasEl, mctsCtx;
+
+  // ============================================================
+  // π ESTIMATOR
+  // ============================================================
+  let piInside = 0, piTotal = 0, piAnimId = null, piRunning = false;
+
+  function piResize() {
+    if (!piCanvas) return;
+    const rect = piCanvas.getBoundingClientRect();
+    const w = Math.max(rect.width, 100);
+    const h = Math.max(rect.height, 100);
+    piCanvas.width = w * 2;
+    piCanvas.height = h * 2;
+    piCtx.setTransform(2, 0, 0, 2, 0, 0);
+    piDrawBase();
+  }
+
+  function piDrawBase() {
+    const w = piCanvas.width / 2, h = piCanvas.height / 2;
+    piCtx.fillStyle = '#08080e';
+    piCtx.fillRect(0, 0, w, h);
+    piCtx.strokeStyle = '#1e1e30';
+    piCtx.lineWidth = 1;
+    piCtx.beginPath();
+    piCtx.arc(w / 2, h / 2, Math.min(w, h) / 2 - 2, 0, Math.PI * 2);
+    piCtx.stroke();
+  }
+
+  function piAddPoint() {
+    const w = piCanvas.width / 2, h = piCanvas.height / 2;
+    const x = Math.random(), y = Math.random();
+    const inside = (x - 0.5) ** 2 + (y - 0.5) ** 2 <= 0.25;
+    piTotal++;
+    if (inside) piInside++;
+    piCtx.fillStyle = inside ? '#00b89480' : '#e1705560';
+    piCtx.beginPath();
+    piCtx.arc(x * w, y * h, 1.5, 0, Math.PI * 2);
+    piCtx.fill();
+  }
+
+  function piUpdateStats() {
+    const est = piTotal > 0 ? (4 * piInside / piTotal) : 0;
+    document.getElementById('piValue').textContent = piTotal > 0 ? 'π ≈ ' + est.toFixed(5) : 'π ≈ ?';
+    document.getElementById('piTotal').textContent = piTotal;
+    document.getElementById('piInside').textContent = piInside;
+  }
+
+  window.piAdd = function(n) {
+    for (let i = 0; i < n; i++) piAddPoint();
+    piUpdateStats();
+  };
+
+  window.piStart = function() {
+    if (piRunning) { piRunning = false; return; }
+    piRunning = true;
+    (function loop() {
+      if (!piRunning) return;
+      for (let i = 0; i < 5; i++) piAddPoint();
+      piUpdateStats();
+      piAnimId = requestAnimationFrame(loop);
+    })();
+  };
+
+  window.piReset = function() {
+    piRunning = false;
+    if (piAnimId) cancelAnimationFrame(piAnimId);
+    piInside = 0; piTotal = 0;
+    piResize();
+    piUpdateStats();
+  };
+
+  // ============================================================
+  // UCB CALCULATOR
+  // ============================================================
+  window.updateUCB = function() {
+    const C = parseFloat(document.getElementById('ucbC').value);
+    const ni = parseInt(document.getElementById('ucbNi').value);
+    const N = parseInt(document.getElementById('ucbN').value);
+    const v = parseFloat(document.getElementById('ucbV').value);
+
+    document.getElementById('ucbC_val').textContent = C.toFixed(2);
+    document.getElementById('ucbNi_val').textContent = ni;
+    document.getElementById('ucbN_val').textContent = N;
+    document.getElementById('ucbV_val').textContent = v.toFixed(2);
+
+    const qValue = 1 - ((v) + 1) / 2;
+    const explore = C * Math.sqrt(Math.log(N) / ni);
+    const total = qValue + explore;
+
+    document.getElementById('ucbExploit').textContent = qValue.toFixed(3);
+    document.getElementById('ucbExplore').textContent = explore.toFixed(3);
+    document.getElementById('ucbTotal').textContent = total.toFixed(3);
+
+    const totalAbs = Math.abs(qValue) + Math.abs(explore);
+    if (totalAbs > 0) {
+      const ep = (Math.abs(qValue) / totalAbs * 100);
+      const xp = (Math.abs(explore) / totalAbs * 100);
+      document.getElementById('ucbExploitBar').style.width = ep + '%';
+      document.getElementById('ucbExploreBar').style.width = xp + '%';
+      document.getElementById('ucbExploitBar').textContent = ep > 15 ? 'Q' : '';
+      document.getElementById('ucbExploreBar').textContent = xp > 15 ? 'Explore' : '';
+    }
+  };
+
+  // ============================================================
+  // BANDIT SIMULATOR
+  // ============================================================
+  const NUM_MACHINES = 5;
+  const MACHINE_ICONS = ['🎰', '🎲', '🃏', '🎯', '🎪'];
+  let machines = [];
+  let bTotalPulls = 0, bTotalReward = 0, bShowTruth = false;
+
+  function banditInitInner() {
+    machines = [];
+    const probs = [0.15, 0.35, 0.55, 0.75, 0.45].sort(function() { return Math.random() - 0.5; });
+    for (let i = 0; i < NUM_MACHINES; i++) {
+      machines.push({ prob: probs[i], pulls: 0, wins: 0 });
+    }
+    bTotalPulls = 0;
+    bTotalReward = 0;
+    bShowTruth = false;
+    document.getElementById('banditSim').classList.remove('show-truth');
+    banditRender();
+  }
+
+  function bUCB(machine, total) {
+    if (machine.pulls === 0) return Infinity;
+    return machine.wins / machine.pulls + 1.41 * Math.sqrt(Math.log(total) / machine.pulls);
+  }
+
+  function banditRender(selectedIdx, win) {
+    var container = document.getElementById('banditMachines');
+    if (!container) return;
+    container.innerHTML = '';
+    var bestProb = Math.max.apply(null, machines.map(function(m) { return m.prob; }));
+
+    for (var i = 0; i < NUM_MACHINES; i++) {
+      var m = machines[i];
+      var div = document.createElement('div');
+      div.className = 'machine';
+      if (i === selectedIdx) div.classList.add(win ? 'win' : 'lose');
+      var winRate = m.pulls > 0 ? (m.wins / m.pulls * 100).toFixed(1) : '—';
+      var ucb = bTotalPulls > 0 ? bUCB(m, bTotalPulls) : null;
+      div.innerHTML =
+        '<div class="true-prob">p=' + m.prob.toFixed(2) + '</div>' +
+        '<div class="machine-label">머신 ' + (i + 1) + '</div>' +
+        '<div class="machine-icon">' + MACHINE_ICONS[i] + '</div>' +
+        '<div class="machine-stats">' +
+          '<div class="win-rate">' + winRate + '%</div>' +
+          m.pulls + '회 중 ' + m.wins + '승' +
+        '</div>' +
+        '<div class="machine-ucb">UCB: ' + (ucb !== null ? ucb.toFixed(3) : '—') + '</div>';
+      container.appendChild(div);
+    }
+
+    document.getElementById('banditTotal').textContent = bTotalPulls;
+    document.getElementById('banditReward').textContent = bTotalReward;
+    if (bTotalPulls > 0) {
+      var eff = (bTotalReward / (bTotalPulls * bestProb) * 100).toFixed(1);
+      document.getElementById('banditEfficiency').textContent = eff + '%';
+    }
+  }
+
+  window.banditStep = function() {
+    bTotalPulls++;
+    var bestIdx = 0, bestUCBVal = -Infinity;
+    for (var i = 0; i < NUM_MACHINES; i++) {
+      var u = bUCB(machines[i], bTotalPulls);
+      if (u > bestUCBVal) { bestUCBVal = u; bestIdx = i; }
+    }
+    var m = machines[bestIdx];
+    m.pulls++;
+    var win = Math.random() < m.prob;
+    if (win) { m.wins++; bTotalReward++; }
+    banditRender(bestIdx, win);
+  };
+
+  window.banditRun = function(n) {
+    for (var i = 0; i < n; i++) {
+      bTotalPulls++;
+      var bestIdx = 0, bestUCBVal = -Infinity;
+      for (var j = 0; j < NUM_MACHINES; j++) {
+        var u = bUCB(machines[j], bTotalPulls);
+        if (u > bestUCBVal) { bestUCBVal = u; bestIdx = j; }
+      }
+      var m = machines[bestIdx];
+      m.pulls++;
+      if (Math.random() < m.prob) { m.wins++; bTotalReward++; }
+    }
+    banditRender();
+  };
+
+  window.banditToggleTruth = function() {
+    bShowTruth = !bShowTruth;
+    document.getElementById('banditSim').classList.toggle('show-truth', bShowTruth);
+  };
+
+  window.banditReset = function() { banditInitInner(); };
+
+  // ============================================================
+  // MCTS TREE VISUALIZATION
+  // ============================================================
+  function MCTSNode(id, parent, action) {
+    this.id = id;
+    this.parent = parent || null;
+    this.action = action || null;
+    this.children = [];
+    this.visits = 0;
+    this.value = 0;
+    this.x = 0;
+    this.y = 0;
+    this.maxChildren = 3;
+    this._simResult = 0;
+  }
+
+  MCTSNode.prototype.ucb = function(C) {
+    C = C || 1.41;
+    if (this.visits === 0) return Infinity;
+    var q = 1 - ((this.value / this.visits) + 1) / 2;
+    return q + C * Math.sqrt(Math.log(this.parent.visits) / this.visits);
+  };
+
+  var mRoot, mNodeId, mSearches, mPhase, mCurrentNode, mAnimating;
+  var mHighlightPath = [], mSimPath = [], mNewNode = null;
+
+  function mctsResizeCanvas() {
+    if (!mctsCanvasEl) return;
+    var rect = mctsCanvasEl.getBoundingClientRect();
+    var w = Math.max(rect.width, 200);
+    var h = Math.max(rect.height, 200);
+    mctsCanvasEl.width = w * 2;
+    mctsCanvasEl.height = h * 2;
+    mctsCtx.setTransform(2, 0, 0, 2, 0, 0);
+  }
+
+  function mctsLayout() {
+    if (!mctsCanvasEl || !mRoot) return;
+    var W = mctsCanvasEl.width / 2;
+
+    function countLeaves(node) {
+      if (node.children.length === 0) return 1;
+      var s = 0;
+      for (var i = 0; i < node.children.length; i++) s += countLeaves(node.children[i]);
+      return s;
+    }
+
+    function layout(node, depth, leftBound, rightBound) {
+      node.y = 40 + depth * 70;
+      if (node.children.length === 0) {
+        node.x = (leftBound + rightBound) / 2;
+        return;
+      }
+      var totalLeaves = countLeaves(node);
+      var currentLeft = leftBound;
+      for (var i = 0; i < node.children.length; i++) {
+        var childLeaves = countLeaves(node.children[i]);
+        var childRight = currentLeft + (rightBound - leftBound) * (childLeaves / totalLeaves);
+        layout(node.children[i], depth + 1, currentLeft, childRight);
+        currentLeft = childRight;
+      }
+      node.x = (node.children[0].x + node.children[node.children.length - 1].x) / 2;
+    }
+
+    layout(mRoot, 0, 30, W - 30);
+  }
+
+  function mctsDraw() {
+    if (!mctsCanvasEl || !mctsCtx || !mRoot) return;
+    var W = mctsCanvasEl.width / 2;
+    var H = mctsCanvasEl.height / 2;
+    mctsCtx.clearRect(0, 0, W, H);
+    mctsCtx.fillStyle = '#08080e';
+    mctsCtx.fillRect(0, 0, W, H);
+
+    // Edges
+    function drawEdges(node) {
+      for (var i = 0; i < node.children.length; i++) {
+        var child = node.children[i];
+        var hl = mHighlightPath.indexOf(node) >= 0 && mHighlightPath.indexOf(child) >= 0;
+        mctsCtx.beginPath();
+        mctsCtx.strokeStyle = hl ? '#6c5ce7' : '#1e1e30';
+        mctsCtx.lineWidth = hl ? 2 : 1;
+        mctsCtx.moveTo(node.x, node.y);
+        mctsCtx.lineTo(child.x, child.y);
+        mctsCtx.stroke();
+        drawEdges(child);
+      }
+    }
+
+    // Sim path (dashed)
+    if (mSimPath.length > 1) {
+      mctsCtx.beginPath();
+      mctsCtx.strokeStyle = '#fdcb6e80';
+      mctsCtx.lineWidth = 2;
+      mctsCtx.setLineDash([4, 4]);
+      mctsCtx.moveTo(mSimPath[0].x, mSimPath[0].y);
+      for (var i = 1; i < mSimPath.length; i++) {
+        mctsCtx.lineTo(mSimPath[i].x, mSimPath[i].y);
+      }
+      mctsCtx.stroke();
+      mctsCtx.setLineDash([]);
+    }
+
+    drawEdges(mRoot);
+
+    // Nodes
+    function drawNode(node) {
+      var inPath = mHighlightPath.indexOf(node) >= 0;
+      var isNew = node === mNewNode;
+      var isSim = mSimPath.indexOf(node) >= 0 && !inPath && !isNew;
+      var r = 18;
+
+      if (inPath || isNew) {
+        mctsCtx.beginPath();
+        mctsCtx.arc(node.x, node.y, r + 6, 0, Math.PI * 2);
+        mctsCtx.fillStyle = isNew ? '#00b89420' : '#6c5ce720';
+        mctsCtx.fill();
+      }
+
+      mctsCtx.beginPath();
+      mctsCtx.arc(node.x, node.y, r, 0, Math.PI * 2);
+      if (isNew) {
+        mctsCtx.fillStyle = '#0a2a20'; mctsCtx.strokeStyle = '#00b894';
+      } else if (inPath) {
+        mctsCtx.fillStyle = '#1a1a3a'; mctsCtx.strokeStyle = '#6c5ce7';
+      } else if (isSim) {
+        mctsCtx.fillStyle = '#1a1a20'; mctsCtx.strokeStyle = '#fdcb6e80';
+      } else {
+        mctsCtx.fillStyle = '#12121a'; mctsCtx.strokeStyle = '#2a2a40';
+      }
+      mctsCtx.lineWidth = (inPath || isNew) ? 2 : 1;
+      mctsCtx.fill();
+      mctsCtx.stroke();
+
+      mctsCtx.fillStyle = node.visits > 0 ? '#eeeef4' : '#4a4a60';
+      mctsCtx.font = '500 10px JetBrains Mono, monospace';
+      mctsCtx.textAlign = 'center';
+      mctsCtx.textBaseline = 'middle';
+      mctsCtx.fillText(String(node.visits), node.x, node.y - 4);
+
+      if (node.visits > 0) {
+        var avg = (node.value / node.visits).toFixed(1);
+        mctsCtx.fillStyle = parseFloat(avg) >= 0 ? '#00b894' : '#e17055';
+        mctsCtx.font = '400 8px JetBrains Mono, monospace';
+        mctsCtx.fillText(avg, node.x, node.y + 7);
+      }
+
+      for (var i = 0; i < node.children.length; i++) drawNode(node.children[i]);
+    }
+    drawNode(mRoot);
+
+    // Ghost nodes from simulation
+    for (var i = 1; i < mSimPath.length; i++) {
+      var sp = mSimPath[i];
+      if (sp._ghost) {
+        mctsCtx.beginPath();
+        mctsCtx.arc(sp.x, sp.y, 10, 0, Math.PI * 2);
+        mctsCtx.fillStyle = '#fdcb6e15';
+        mctsCtx.strokeStyle = '#fdcb6e60';
+        mctsCtx.lineWidth = 1;
+        mctsCtx.fill();
+        mctsCtx.stroke();
+        mctsCtx.fillStyle = '#fdcb6e';
+        mctsCtx.font = '400 8px JetBrains Mono, monospace';
+        mctsCtx.textAlign = 'center';
+        mctsCtx.textBaseline = 'middle';
+        mctsCtx.fillText('?', sp.x, sp.y);
+      }
+    }
+  }
+
+  function mctsSelectBest(node) {
+    if (node.children.length === 0) return node;
+    var best = null, bestVal = -Infinity;
+    for (var i = 0; i < node.children.length; i++) {
+      var u = node.children[i].ucb();
+      if (u > bestVal) { bestVal = u; best = node.children[i]; }
+    }
+    return best;
+  }
+
+  function mctsGetPath(node) {
+    var path = [];
+    while (node) { path.unshift(node); node = node.parent; }
+    return path;
+  }
+
+  function updateStepFlow(phase) {
+    var steps = document.querySelectorAll('#stepFlow .step');
+    for (var i = 0; i < steps.length; i++) {
+      steps[i].classList.toggle('active', i === phase);
+    }
+  }
+
+  window.mctsReset = function() {
+    mNodeId = 0;
+    mRoot = new MCTSNode(mNodeId++);
+    mSearches = 0;
+    mPhase = -1;
+    mCurrentNode = null;
+    mAnimating = false;
+    mHighlightPath = [];
+    mSimPath = [];
+    mNewNode = null;
+    document.getElementById('mctsSearchCount').textContent = '탐색: 0회';
+    document.getElementById('mctsInfo').innerHTML = '<span class="stage">준비</span> — "다음 단계" 또는 "탐색 1회"를 눌러 MCTS를 시작하세요.';
+    updateStepFlow(-1);
+    mctsResizeCanvas();
+    mctsLayout();
+    mctsDraw();
+  };
+
+  // Internal step function — does the actual work, no guard
+  function doStep() {
+    mPhase++;
+
+    if (mPhase === 0) {
+      // SELECTION
+      mSimPath = [];
+      mNewNode = null;
+      var node = mRoot;
+      while (node.children.length === node.maxChildren && node.children.length > 0) {
+        node = mctsSelectBest(node);
+      }
+      mCurrentNode = node;
+      mHighlightPath = mctsGetPath(node);
+      updateStepFlow(0);
+      document.getElementById('mctsInfo').innerHTML =
+        '<span class="stage">Selection</span> — UCB가 가장 높은 자식을 따라 <span class="highlight">노드 ' + node.id + '</span>까지 내려왔습니다.';
+
+    } else if (mPhase === 1) {
+      // EXPANSION
+      var node = mCurrentNode;
+      var child = new MCTSNode(mNodeId++, node, node.children.length);
+      node.children.push(child);
+      mNewNode = child;
+      mCurrentNode = child;
+      mHighlightPath = mctsGetPath(child);
+      mctsLayout();
+      updateStepFlow(1);
+      document.getElementById('mctsInfo').innerHTML =
+        '<span class="stage">Expansion</span> — <span class="highlight">노드 ' + child.id + '</span>를 새로 추가했습니다.';
+
+    } else if (mPhase === 2) {
+      // SIMULATION
+      var startNode = mCurrentNode;
+      mSimPath = [startNode];
+      var prevPoint = { x: startNode.x, y: startNode.y };
+      var simDepth = 2 + Math.floor(Math.random() * 3);
+      for (var i = 0; i < simDepth; i++) {
+        var dx = (Math.random() - 0.5) * 60;
+        var dy = 35 + Math.random() * 15;
+        var ghost = { x: prevPoint.x + dx, y: prevPoint.y + dy, _ghost: true };
+        mSimPath.push(ghost);
+        prevPoint = ghost;
+      }
+      var simResult = Math.random() > 0.5 ? 1 : -1;
+      mCurrentNode._simResult = simResult;
+      updateStepFlow(2);
+      document.getElementById('mctsInfo').innerHTML =
+        '<span class="stage">Simulation</span> — 노드 ' + startNode.id + '에서 랜덤 플레이. 결과: <span class="highlight">' + (simResult === 1 ? '승리 (+1)' : '패배 (-1)') + '</span>';
+
+    } else if (mPhase === 3) {
+      // BACKPROPAGATION
+      var value = mCurrentNode._simResult || 0;
+      var node = mCurrentNode;
+      var v = value;
+      while (node) {
+        node.visits++;
+        node.value += v;
+        v = -v;
+        node = node.parent;
+      }
+      mSimPath = [];
+      mSearches++;
+      document.getElementById('mctsSearchCount').textContent = '탐색: ' + mSearches + '회';
+      updateStepFlow(3);
+      document.getElementById('mctsInfo').innerHTML =
+        '<span class="stage">Backpropagation</span> — 결과(' + (value === 1 ? '+1' : '-1') + ')를 루트까지 전파. 매 레벨마다 부호 반전. <span class="highlight">' + mSearches + '번째 탐색 완료.</span>';
+      mPhase = -1;
+    }
+
+    mctsDraw();
+  }
+
+  // Public: manual step button — blocked during auto animation
+  window.mctsStep = function() {
+    if (mAnimating) return;
+    doStep();
+  };
+
+  window.mctsFullSearch = function() {
+    if (mAnimating) return;
+    mAnimating = true;
+    mPhase = -1;
+    var step = 0;
+    var interval = setInterval(function() {
+      doStep();
+      step++;
+      if (step >= 4) {
+        clearInterval(interval);
+        mAnimating = false;
+      }
+    }, 500);
+  };
+
+  window.mctsRun10 = function() {
+    if (mAnimating) return;
+    mAnimating = true;
+    var count = 0;
+    function doOne() {
+      mPhase = -1;
+      var step = 0;
+      var iv = setInterval(function() {
+        doStep();
+        step++;
+        if (step >= 4) {
+          clearInterval(iv);
+          count++;
+          if (count < 10) {
+            setTimeout(doOne, 100);
+          } else {
+            mAnimating = false;
+          }
+        }
+      }, 80);
+    }
+    doOne();
+  };
+
+  // ============================================================
+  // SCROLL ANIMATIONS
+  // ============================================================
+  function initScrollObserver() {
+    var sections = document.querySelectorAll('section');
+    for (var i = 0; i < sections.length; i++) {
+      if (!sections[i].classList.contains('hero')) sections[i].classList.add('animate');
+    }
+    var observer = new IntersectionObserver(function(entries) {
+      for (var j = 0; j < entries.length; j++) {
+        if (entries[j].isIntersecting) entries[j].target.classList.add('visible');
+      }
+    }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i].classList.contains('animate')) observer.observe(sections[i]);
+    }
+  }
+
+  function initNavHighlight() {
+    var sections = document.querySelectorAll('section[id]');
+    var navLinks = document.querySelectorAll('nav a');
+    var observer = new IntersectionObserver(function(entries) {
+      for (var j = 0; j < entries.length; j++) {
+        if (entries[j].isIntersecting) {
+          for (var k = 0; k < navLinks.length; k++) {
+            navLinks[k].classList.toggle('active', navLinks[k].getAttribute('href') === '#' + entries[j].target.id);
+          }
+        }
+      }
+    }, { threshold: 0.3 });
+    for (var i = 0; i < sections.length; i++) observer.observe(sections[i]);
+  }
+
+  // ============================================================
+  // INIT
+  // ============================================================
+  document.addEventListener('DOMContentLoaded', function() {
+    try {
+      // Pi canvas
+      piCanvas = document.getElementById('piCanvas');
+      if (piCanvas) piCtx = piCanvas.getContext('2d');
+
+      // MCTS canvas
+      mctsCanvasEl = document.getElementById('mctsCanvas');
+      if (mctsCanvasEl) mctsCtx = mctsCanvasEl.getContext('2d');
+
+      // Init pi
+      if (piCanvas && piCtx) {
+        piResize();
+        piUpdateStats();
+      }
+
+      // Init MCTS
+      if (mctsCanvasEl && mctsCtx) {
+        window.mctsReset();
+      }
+
+      // Init bandit
+      banditInitInner();
+
+      // Init UCB calc
+      window.updateUCB();
+
+      // Scroll animations
+      initScrollObserver();
+      initNavHighlight();
+
+      console.log('MCTS Guide initialized successfully');
+    } catch (e) {
+      console.error('Init error:', e);
+      var sections = document.querySelectorAll('section');
+      for (var i = 0; i < sections.length; i++) {
+        sections[i].classList.remove('animate');
+      }
+    }
+  });
+
+  window.addEventListener('resize', function() {
+    try {
+      if (piCanvas && piCtx) piResize();
+      if (mctsCanvasEl && mctsCtx) {
+        mctsResizeCanvas();
+        mctsLayout();
+        mctsDraw();
+      }
+    } catch(e) { console.error('Resize error:', e); }
+  });
+
+})();
+</script>
+</body>
+</html>

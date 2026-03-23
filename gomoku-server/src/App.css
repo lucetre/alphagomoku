@@ -1,0 +1,208 @@
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.app-title {
+  text-align: center;
+  margin-bottom: 24px;
+  font-size: 24px;
+}
+
+/* Game layout: board left, log right */
+.game-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.game-left {
+  flex-shrink: 0;
+}
+
+/* Controls */
+.controls {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.controls-info {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  font-size: 14px;
+}
+
+.game-id {
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.next-turn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.turn-dot {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid #999;
+}
+
+.turn-dot.black {
+  background: #000;
+}
+
+.turn-dot.white {
+  background: #fff;
+}
+
+.controls-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.controls-buttons button {
+  padding: 6px 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.controls-buttons button:hover {
+  background: #f0f0f0;
+}
+
+.controls-buttons button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Activity Log */
+.activity-log {
+  flex: 1;
+  min-width: 280px;
+  max-height: 600px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.activity-log h2 {
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+.log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.log-empty {
+  color: #999;
+  font-size: 13px;
+}
+
+.log-entry {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  font-family: monospace;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: #fafafa;
+}
+
+.log-time {
+  color: #999;
+  flex-shrink: 0;
+}
+
+.log-source {
+  font-weight: 600;
+  flex-shrink: 0;
+  padding: 0 4px;
+  border-radius: 2px;
+}
+
+.log-source.ui {
+  color: #0066cc;
+}
+
+.log-source.api {
+  color: #cc6600;
+}
+
+.log-action {
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.log-detail {
+  color: #666;
+}
+
+.log-error {
+  background: #fff0f0;
+}
+
+/* Game Setup */
+.game-setup {
+  max-width: 320px;
+  margin: 40px auto;
+  text-align: center;
+}
+
+.game-setup h2 {
+  margin-bottom: 20px;
+}
+
+.setup-fields {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.setup-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.setup-fields input {
+  width: 80px;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 16px;
+}
+
+.create-btn {
+  padding: 10px 24px;
+  background: #333;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.create-btn:hover {
+  background: #555;
+}
