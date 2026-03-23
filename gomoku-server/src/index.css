@@ -1,12 +1,30 @@
-* {
+*, *::before, *::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+:root {
+  --bg: #0a0a0f;
+  --bg-card: #12121a;
+  --bg-card-hover: #1a1a28;
+  --border: #1e1e30;
+  --border-active: #3a3a5c;
+  --text: #c8c8d8;
+  --text-dim: #6a6a80;
+  --text-bright: #eeeef4;
+  --accent: #6c5ce7;
+  --accent-glow: #6c5ce740;
+  --green: #00b894;
+  --red: #e17055;
+  --yellow: #fdcb6e;
+}
+
 body {
-  background: #fff0db;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
-    Arial, sans-serif;
-  color: #333;
+  font-family: 'IBM Plex Sans KR', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  font-size: 15px;
+  overflow-x: hidden;
 }

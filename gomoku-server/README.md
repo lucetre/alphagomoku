@@ -1,73 +1,44 @@
-# React + TypeScript + Vite
+# AlphaGomoku Server
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+In-memory Gomoku (Five-in-a-Row) game server with a React UI and REST API.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Flexible board size** — create games with any N×M board
+- **REST API** — create games, place moves, undo, and query board state
+- **Webhooks** — subscribe to turn notifications per color (black/white)
+- **URL-based routing** — each game is accessible at `/:gameId`
 
-## React Compiler
+## API
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/games` | List all active games |
+| `POST` | `/api/games` | Create a new game (`{ rows, cols }`) |
+| `GET` | `/api/games/:id` | Get game state |
+| `DELETE` | `/api/games/:id` | Delete a game |
+| `POST` | `/api/games/:id/move` | Place a stone (`{ row, col }`) |
+| `POST` | `/api/games/:id/undo` | Undo last move |
+| `GET` | `/api/games/:id/webhooks` | List webhooks |
+| `POST` | `/api/games/:id/webhooks` | Register webhook (`{ url, color }`) |
+| `DELETE` | `/api/games/:id/webhooks/:wid` | Remove webhook |
 
-## Expanding the ESLint configuration
+Webhooks receive a POST with `{ gameId, event: "your_turn", color, board, moves, lastMove }` when it becomes the subscribed color's turn.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Development
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev       # starts Vite (frontend) + Express (API) concurrently
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- Frontend: `http://localhost:5173`
+- API: `http://localhost:3001/api/...` (proxied through Vite)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Deploy
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Deployed on Vercel. The API runs as a single serverless function (`api/index.ts`) with in-memory state (resets on cold start).
+
+```bash
+vercel --prod
 ```

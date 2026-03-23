@@ -7,7 +7,7 @@ function App() {
   return (
     <BrowserRouter>
       <div className="app">
-        <h1 className="app-title">AlphaGomoku Server</h1>
+        <h1 className="app-title">Alpha<span className="accent">Gomoku</span> Server</h1>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/:gameId" element={<GamePage />} />

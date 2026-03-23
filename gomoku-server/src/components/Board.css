@@ -15,8 +15,8 @@
 .grid-cell {
   width: 28px;
   height: 28px;
-  border: 0.5px solid #000;
-  background: rgb(255, 180, 76);
+  border: 0.5px solid var(--border-active);
+  background: #1a1a28;
 }
 
 /* Stones overlay */
@@ -29,28 +29,29 @@
   width: 28px;
   height: 28px;
   border: 0.5px solid transparent;
-  background: rgba(255, 180, 76, 0.2);
+  background: transparent;
   cursor: pointer;
+  transition: background 0.15s;
 }
 
 .stone-cell.black {
-  background: #000;
+  background: var(--text-bright);
   border-radius: 50%;
   cursor: default;
 }
 
 .stone-cell.white {
-  background: #fff;
+  background: var(--text-dim);
   border-radius: 50%;
-  border-color: #ccc;
+  border-color: var(--border);
   cursor: default;
 }
 
 .stone-cell.last-move {
-  box-shadow: 0 0 0 2px #ff4444;
+  box-shadow: 0 0 0 2px var(--accent);
 }
 
 .stone-cell:not(.black):not(.white):hover {
-  background: rgba(0, 0, 0, 0.15);
+  background: var(--accent-glow);
   border-radius: 50%;
 }
