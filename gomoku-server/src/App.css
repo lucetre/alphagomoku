@@ -4,6 +4,10 @@
   padding: 40px 2rem;
 }
 
+.app-title-link {
+  text-decoration: none;
+}
+
 .app-title {
   text-align: center;
   margin-bottom: 32px;
