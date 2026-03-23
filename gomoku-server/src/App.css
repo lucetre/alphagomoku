@@ -1,7 +1,11 @@
 .app {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 40px 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .app-title {
@@ -19,6 +23,14 @@
 
 .game-left {
   flex-shrink: 0;
+}
+
+.game-right {
+  flex: 1;
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 /* Controls */
@@ -271,5 +283,93 @@
 }
 
 .game-list-delete:hover {
+  color: #e55;
+}
+
+/* Webhook Manager */
+.webhook-manager {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.webhook-manager h3 {
+  font-size: 14px;
+  margin: 0 0 12px;
+}
+
+.webhook-form {
+  display: flex;
+  gap: 6px;
+}
+
+.webhook-url-input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: monospace;
+}
+
+.webhook-color-select {
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+  background: #fff;
+}
+
+.webhook-add-btn {
+  padding: 6px 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.webhook-add-btn:hover {
+  background: #f0f0f0;
+}
+
+.webhook-list {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.webhook-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-family: monospace;
+  padding: 4px 6px;
+  background: #fafafa;
+  border-radius: 4px;
+}
+
+.webhook-url {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #666;
+}
+
+.webhook-remove-btn {
+  background: none;
+  border: none;
+  color: #ccc;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.webhook-remove-btn:hover {
   color: #e55;
 }

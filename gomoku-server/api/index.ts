@@ -7,6 +7,7 @@ import {
   placeMove,
   undoMove,
   addWebhook,
+  listWebhooks,
   removeWebhook,
   deleteGame,
 } from "../lib/gameStore.js";
@@ -81,6 +82,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } catch (err: any) {
       return res.status(400).json({ error: err.message });
     }
+  }
+
+  // GET /api/games/:gameId/webhooks
+  if (method === "GET" && webhooksMatch) {
+    const webhooks = listWebhooks(webhooksMatch[1]);
+    if (!webhooks) return res.status(404).json({ error: "Game not found" });
+    return res.status(200).json(webhooks);
   }
 
   // POST /api/games/:gameId/webhooks

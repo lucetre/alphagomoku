@@ -8,6 +8,7 @@ import {
   placeMove,
   undoMove,
   addWebhook,
+  listWebhooks,
   removeWebhook,
   deleteGame,
 } from "./lib/gameStore";
@@ -63,6 +64,12 @@ app.post("/api/games/:gameId/undo", async (req, res) => {
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
+});
+
+app.get("/api/games/:gameId/webhooks", (req, res) => {
+  const webhooks = listWebhooks(req.params.gameId);
+  if (!webhooks) return res.status(404).json({ error: "Game not found" });
+  res.json(webhooks);
 });
 
 app.post("/api/games/:gameId/webhooks", (req, res) => {

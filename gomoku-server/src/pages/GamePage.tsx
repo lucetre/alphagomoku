@@ -4,6 +4,7 @@ import type { GameState, LogEntry } from "../types";
 import { Board } from "../components/Board";
 import { Controls } from "../components/Controls";
 import { ActivityLog } from "../components/ActivityLog";
+import { WebhookManager } from "../components/WebhookManager";
 
 let logCounter = 0;
 
@@ -109,7 +110,10 @@ export function GamePage() {
           onCellClick={placeMove}
         />
       </div>
-      <ActivityLog logs={logs} />
+      <div className="game-right">
+        <WebhookManager gameId={game.gameId} onLog={addLog} />
+        <ActivityLog logs={logs} />
+      </div>
     </div>
   );
 }

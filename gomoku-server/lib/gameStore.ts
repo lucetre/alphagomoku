@@ -116,6 +116,12 @@ export function undoMove(gameId: string): GameResponse {
   return toResponse(game);
 }
 
+export function listWebhooks(gameId: string): Webhook[] | null {
+  const game = games.get(gameId);
+  if (!game) return null;
+  return Array.from(game.webhooks.values());
+}
+
 export function addWebhook(gameId: string, url: string, color: Color): Webhook {
   const game = games.get(gameId);
   if (!game) throw new Error("Game not found");
