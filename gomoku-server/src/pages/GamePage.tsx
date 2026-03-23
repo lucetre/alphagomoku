@@ -5,6 +5,7 @@ import { Board } from "../components/Board";
 import { Controls } from "../components/Controls";
 import { ActivityLog } from "../components/ActivityLog";
 import { WebhookManager } from "../components/WebhookManager";
+import { ApiGuide } from "../components/ApiGuide";
 
 let logCounter = 0;
 
@@ -14,6 +15,8 @@ export function GamePage() {
   const [game, setGame] = useState<GameState | null>(null);
   const [loading, setLoading] = useState(true);
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const lastMoveCount = useRef(0);
+  const loadedRef = useRef(false);
 
   const addLog = useCallback((action: string, source: "ui" | "api", detail: string) => {
     setLogs((prev) => [
@@ -28,21 +31,26 @@ export function GamePage() {
     ]);
   }, []);
 
+  // Initial load — runs once per gameId
   useEffect(() => {
+    loadedRef.current = false;
     const load = async () => {
       const res = await fetch(`/api/games/${gameId}`);
       if (res.ok) {
         const data = await res.json();
         lastMoveCount.current = data.moves.length;
         setGame(data);
-        addLog("LOAD", "ui", `Loaded game ${gameId}`);
+        if (!loadedRef.current) {
+          loadedRef.current = true;
+          addLog("LOAD", "ui", `Loaded game ${gameId}`);
+        }
       } else {
         addLog("ERROR", "ui", "Game not found");
       }
       setLoading(false);
     };
     load();
-  }, [gameId, addLog]);
+  }, [gameId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const placeMove = async (row: number, col: number) => {
     if (!game) return;
@@ -74,28 +82,31 @@ export function GamePage() {
     }
   };
 
-  const lastMoveCount = useRef(0);
-
-  const refresh = useCallback(async (silent = false) => {
+  const pollBoard = useCallback(async () => {
     const res = await fetch(`/api/games/${gameId}`);
     if (!res.ok) return;
     const data = await res.json();
-    const changed = data.moves.length !== lastMoveCount.current;
-    lastMoveCount.current = data.moves.length;
-    setGame(data);
-    if (changed && silent) {
+    if (data.moves.length !== lastMoveCount.current) {
+      lastMoveCount.current = data.moves.length;
+      setGame(data);
       addLog("SYNC", "api", `Board updated (${data.moves.length} moves)`);
-    }
-    if (!silent) {
-      addLog("REFRESH", "ui", "Board refreshed from server");
     }
   }, [gameId, addLog]);
 
+  const manualRefresh = async () => {
+    const res = await fetch(`/api/games/${gameId}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    lastMoveCount.current = data.moves.length;
+    setGame(data);
+    addLog("REFRESH", "ui", "Board refreshed from server");
+  };
+
   // Auto-poll every 3 seconds
   useEffect(() => {
-    const interval = setInterval(() => refresh(true), 3000);
+    const interval = setInterval(pollBoard, 3000);
     return () => clearInterval(interval);
-  }, [refresh]);
+  }, [pollBoard]);
 
   if (loading) return <p style={{ textAlign: "center" }}>Loading...</p>;
   if (!game) {
@@ -108,28 +119,31 @@ export function GamePage() {
   }
 
   return (
-    <div className="game-layout">
-      <div className="game-left">
-        <Controls
-          nextColor={game.nextColor}
-          moveCount={game.moves.length}
-          gameId={game.gameId}
-          onUndo={undo}
-          onRefresh={refresh}
-          onNewGame={() => navigate("/")}
-        />
-        <Board
-          rows={game.rows}
-          cols={game.cols}
-          board={game.board}
-          moves={game.moves}
-          onCellClick={placeMove}
-        />
+    <>
+      <div className="game-layout">
+        <div className="game-left">
+          <Controls
+            nextColor={game.nextColor}
+            moveCount={game.moves.length}
+            gameId={game.gameId}
+            onUndo={undo}
+            onRefresh={manualRefresh}
+            onNewGame={() => navigate("/")}
+          />
+          <Board
+            rows={game.rows}
+            cols={game.cols}
+            board={game.board}
+            moves={game.moves}
+            onCellClick={placeMove}
+          />
+        </div>
+        <div className="game-right">
+          <WebhookManager gameId={game.gameId} onLog={addLog} />
+          <ActivityLog logs={logs} />
+        </div>
       </div>
-      <div className="game-right">
-        <WebhookManager gameId={game.gameId} onLog={addLog} />
-        <ActivityLog logs={logs} />
-      </div>
-    </div>
+      <ApiGuide gameId={game.gameId} onMoveSent={pollBoard} />
+    </>
   );
 }
