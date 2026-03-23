@@ -1,11 +1,7 @@
 .app {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 60px 2rem;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  padding: 40px 2rem;
 }
 
 .app-title {
