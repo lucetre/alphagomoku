@@ -1,6 +1,8 @@
 .board-container {
   position: relative;
   display: inline-block;
+  align-self: center;
+  width: fit-content;
 }
 
 /* Grid lines */

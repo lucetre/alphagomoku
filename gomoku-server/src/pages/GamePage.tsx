@@ -136,11 +136,11 @@ export function GamePage() {
           moves={game.moves}
           onCellClick={placeMove}
         />
+        <ApiGuide gameId={game.gameId} board={game.board} onMoveSent={pollBoard} />
       </div>
       <div className="game-right">
-        <ActivityLog logs={logs} />
-        <ApiGuide gameId={game.gameId} onMoveSent={pollBoard} />
         <WebhookManager gameId={game.gameId} onLog={addLog} />
+        <ActivityLog logs={logs} />
       </div>
     </div>
   );

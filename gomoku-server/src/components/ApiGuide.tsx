@@ -1,17 +1,39 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import type { Color } from "../types";
 
 interface ApiGuideProps {
   gameId: string;
-  onMoveSent?: (row: number, col: number) => void;
+  board: (Color | null)[][];
+  onMoveSent?: () => void;
 }
 
-export function ApiGuide({ gameId, onMoveSent }: ApiGuideProps) {
+function randomEmpty(board: (Color | null)[][]): [number, number] {
+  const empty: [number, number][] = [];
+  for (let r = 0; r < board.length; r++) {
+    for (let c = 0; c < board[r].length; c++) {
+      if (board[r][c] === null) empty.push([r, c]);
+    }
+  }
+  if (empty.length === 0) return [0, 0];
+  return empty[Math.floor(Math.random() * empty.length)];
+}
+
+export function ApiGuide({ gameId, board, onMoveSent }: ApiGuideProps) {
   const base = window.location.origin;
-  const [row, setRow] = useState(7);
-  const [col, setCol] = useState(7);
+  const [row, setRow] = useState(0);
+  const [col, setCol] = useState(0);
   const [copiedMove, setCopiedMove] = useState(false);
   const [copiedGet, setCopiedGet] = useState(false);
   const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    const [r, c] = randomEmpty(board);
+    setRow(r);
+    setCol(c);
+  }, [board]);
+
+  const rows = board.length;
+  const cols = board[0]?.length ?? 0;
 
   const curlMove = `curl -X POST "${base}/api/games/${gameId}/move" \\
   -H "Content-Type: application/json" \\
@@ -33,9 +55,7 @@ export function ApiGuide({ gameId, onMoveSent }: ApiGuideProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ row, col }),
       });
-      if (res.ok && onMoveSent) {
-        onMoveSent(row, col);
-      }
+      if (res.ok && onMoveSent) onMoveSent();
     } finally {
       setSending(false);
     }
@@ -44,7 +64,6 @@ export function ApiGuide({ gameId, onMoveSent }: ApiGuideProps) {
   return (
     <div className="api-guide">
       <h3>API</h3>
-      <div className="api-examples">
       <div className="api-example">
         <div className="api-label">
           <span className="api-method post">POST</span>
@@ -53,21 +72,11 @@ export function ApiGuide({ gameId, onMoveSent }: ApiGuideProps) {
         <div className="api-inputs">
           <label>
             row
-            <input
-              type="number"
-              min={0}
-              value={row}
-              onChange={(e) => setRow(Number(e.target.value))}
-            />
+            <input type="number" min={0} max={rows - 1} value={row} onChange={(e) => setRow(Number(e.target.value))} />
           </label>
           <label>
             col
-            <input
-              type="number"
-              min={0}
-              value={col}
-              onChange={(e) => setCol(Number(e.target.value))}
-            />
+            <input type="number" min={0} max={cols - 1} value={col} onChange={(e) => setCol(Number(e.target.value))} />
           </label>
         </div>
         <pre className="api-curl">{curlMove}</pre>
@@ -91,7 +100,6 @@ export function ApiGuide({ gameId, onMoveSent }: ApiGuideProps) {
             {copiedGet ? "Copied!" : "Copy"}
           </button>
         </div>
-      </div>
       </div>
     </div>
   );
