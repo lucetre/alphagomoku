@@ -25,7 +25,7 @@
 }
 
 .game-left {
-  flex-shrink: 0;
+  flex: 0 0 auto;
 }
 
 .game-right {
@@ -52,12 +52,17 @@
   align-items: center;
   font-size: 13px;
   color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
 }
 
 .game-id {
   font-weight: 600;
-  font-family: 'JetBrains Mono', monospace;
   color: var(--accent);
+}
+
+.move-count {
+  min-width: 70px;
 }
 
 .next-turn {
