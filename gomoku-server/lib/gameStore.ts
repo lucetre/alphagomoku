@@ -60,6 +60,24 @@ export function createGame(rows = 19, cols = 19): GameResponse {
   return toResponse(game);
 }
 
+export interface GameSummary {
+  gameId: string;
+  rows: number;
+  cols: number;
+  moveCount: number;
+  nextColor: Color;
+}
+
+export function listGames(): GameSummary[] {
+  return Array.from(games.values()).map((g) => ({
+    gameId: g.gameId,
+    rows: g.rows,
+    cols: g.cols,
+    moveCount: g.moves.length,
+    nextColor: nextColor(g),
+  }));
+}
+
 export function getGame(gameId: string): GameResponse | null {
   const game = games.get(gameId);
   return game ? toResponse(game) : null;
@@ -105,6 +123,10 @@ export function addWebhook(gameId: string, url: string, color: Color): Webhook {
   const webhook: Webhook = { webhookId: randomUUID().slice(0, 8), url, color };
   game.webhooks.set(webhook.webhookId, webhook);
   return webhook;
+}
+
+export function deleteGame(gameId: string): boolean {
+  return games.delete(gameId);
 }
 
 export function removeWebhook(gameId: string, webhookId: string): boolean {
