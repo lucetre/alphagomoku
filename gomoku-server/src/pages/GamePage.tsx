@@ -138,9 +138,9 @@ export function GamePage() {
         />
       </div>
       <div className="game-right">
-        <WebhookManager gameId={game.gameId} onLog={addLog} />
-        <ApiGuide gameId={game.gameId} onMoveSent={pollBoard} />
         <ActivityLog logs={logs} />
+        <ApiGuide gameId={game.gameId} onMoveSent={pollBoard} />
+        <WebhookManager gameId={game.gameId} onLog={addLog} />
       </div>
     </div>
   );
