@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import type { GameState, LogEntry } from "../types";
 import { Board } from "../components/Board";
@@ -33,6 +33,7 @@ export function GamePage() {
       const res = await fetch(`/api/games/${gameId}`);
       if (res.ok) {
         const data = await res.json();
+        lastMoveCount.current = data.moves.length;
         setGame(data);
         addLog("LOAD", "ui", `Loaded game ${gameId}`);
       } else {
@@ -71,15 +72,28 @@ export function GamePage() {
     }
   };
 
-  const refresh = async () => {
-    if (!game) return;
-    const res = await fetch(`/api/games/${game.gameId}`);
+  const lastMoveCount = useRef(0);
+
+  const refresh = useCallback(async (silent = false) => {
+    const res = await fetch(`/api/games/${gameId}`);
+    if (!res.ok) return;
     const data = await res.json();
-    if (res.ok) {
-      setGame(data);
+    const changed = data.moves.length !== lastMoveCount.current;
+    lastMoveCount.current = data.moves.length;
+    setGame(data);
+    if (changed && silent) {
+      addLog("SYNC", "api", `Board updated (${data.moves.length} moves)`);
+    }
+    if (!silent) {
       addLog("REFRESH", "ui", "Board refreshed from server");
     }
-  };
+  }, [gameId, addLog]);
+
+  // Auto-poll every 3 seconds
+  useEffect(() => {
+    const interval = setInterval(() => refresh(true), 3000);
+    return () => clearInterval(interval);
+  }, [refresh]);
 
   if (loading) return <p style={{ textAlign: "center" }}>Loading...</p>;
   if (!game) {
