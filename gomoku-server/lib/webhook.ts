@@ -1,4 +1,4 @@
-import { type Game, type Color, type GameResponse, type Move } from "./gameStore";
+import { type Game, type Color, type GameResponse, type Move } from "./gameStore.js";
 
 interface WebhookPayload {
   gameId: string;

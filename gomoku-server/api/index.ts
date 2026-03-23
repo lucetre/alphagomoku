@@ -9,8 +9,8 @@ import {
   addWebhook,
   removeWebhook,
   deleteGame,
-} from "../lib/gameStore";
-import { notifyWebhooks } from "../lib/webhook";
+} from "../lib/gameStore.js";
+import { notifyWebhooks } from "../lib/webhook.js";
 
 // Single catch-all handler so all routes share the same in-memory store
 export default async function handler(req: VercelRequest, res: VercelResponse) {
